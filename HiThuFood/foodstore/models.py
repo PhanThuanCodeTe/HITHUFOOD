@@ -1,11 +1,11 @@
+from cloudinary.models import CloudinaryField
 from django.contrib.auth.models import AbstractUser
 from django.db import models
-from cloudinary import CloudinaryImage
 from foodstore.utils import get_default_avatar_url
 
 
 class User(AbstractUser):
-    avatar = CloudinaryImage('image/upload/store_default')
+    avatar = CloudinaryField('image/upload/avatar_default')
     created_date = models.DateTimeField(auto_now_add=True)
     number = models.CharField(max_length=12, unique=True)
     is_staff = models.BooleanField(default=True)
@@ -19,7 +19,7 @@ class User(AbstractUser):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         if not self.avatar:
-            self.avatar = CloudinaryImage(get_default_avatar_url())
+            self.avatar = CloudinaryField(get_default_avatar_url())
 
 
 class BaseItem(models.Model):
@@ -32,7 +32,7 @@ class BaseItem(models.Model):
 
 class Store(BaseItem):
     description = models.TextField(blank=True, null=True)
-    avatar = CloudinaryImage('image/upload/avatar_default')
+    avatar = CloudinaryField('image/upload/avatar_default')
     average_rating = models.FloatField(default=None, null=True)
     #user nào là chủ cửa hàng
     user = models.OneToOneField(User, on_delete=models.CASCADE,
@@ -44,7 +44,7 @@ class Store(BaseItem):
         # nếu instance ko gán giá trị cho trươờng avatar
         # thì gán 1 hình ảnh trên cloudinary làm avatar mặc định
         if not self.avatar:
-            self.avatar = CloudinaryImage(get_default_avatar_url())
+            self.avatar = CloudinaryField(get_default_avatar_url())
 
 class UserFollowedStore(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='storesthatuserfollowed')

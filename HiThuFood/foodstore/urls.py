@@ -3,7 +3,7 @@ from rest_framework.routers import DefaultRouter
 from foodstore import views
 
 router = DefaultRouter()
-router.register('create-user', views.CreateUserViewSet)
+router.register('user', views.UserViewSet)
 urlpatterns = [
     path('', include(router.urls)),
 ]
