@@ -1,7 +1,9 @@
 from django.http import HttpResponse
 from django.shortcuts import render, get_object_or_404
-from rest_framework import viewsets, generics, parsers, permissions
+from rest_framework import viewsets, generics, parsers, permissions, status
+from rest_framework.decorators import action
 from rest_framework.exceptions import NotAuthenticated
+from rest_framework.response import Response
 
 from .models import User
 from .serializer import *
@@ -25,7 +27,7 @@ class UserViewSet(viewsets.ViewSet, generics.CreateAPIView, generics.RetrieveAPI
         # Kiểm tra xem người dùng hiện tại có quyền truy cập vào đối tượng hay không
         user = self.request.user
         if user.is_authenticated and obj.pk != user.pk:
-            raise NotAuthenticated()
+            raise NotAuthenticated() #loi 401_UNAUTHORIZED
 
         self.check_object_permissions(self.request, obj)
         return obj
@@ -42,6 +44,18 @@ class UserViewSet(viewsets.ViewSet, generics.CreateAPIView, generics.RetrieveAPI
     # nó sẽ gây ra ngoại lệ PermissionDenied và trả về mã lỗi 401 (Unauthorized).
     # Chỉ khi pk của đối tượng khớp với pk của người dùng hiện tại,
     # họ mới có thể xem và cập nhật thông tin.
+
+class StoreViewSet(viewsets.ViewSet, generics.CreateAPIView, generics.RetrieveUpdateAPIView):
+    queryset = Store.objects.filter(active=True)
+    serializer_class = StoreSerializer
+    parser_classes = [parsers.MultiPartParser, ]
+
+    def destroy(self, request, pk):
+        l = Store.objects.get(pk=pk)
+        l.active = False
+        l.save()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
 
 
 
