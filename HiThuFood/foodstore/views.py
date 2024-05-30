@@ -1,7 +1,7 @@
 from rest_framework import viewsets, generics, parsers, permissions, status
 from rest_framework.response import Response
-from foodstore.perms import *
-from .serializer import *
+from foodstore.perms import IsObjectOwner, IsUserOwner, IsStoreOwner
+from foodstore.serializer import *
 
 
 

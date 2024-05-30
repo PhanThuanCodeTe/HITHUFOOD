@@ -3,7 +3,7 @@ from django.contrib import admin
 from django.db.models import Count
 from django.template.response import TemplateResponse
 from django.urls import path
-from .models import *
+from foodstore.models import *
 from django.utils.html import mark_safe
 
 class UserAdmin(admin.ModelAdmin):
