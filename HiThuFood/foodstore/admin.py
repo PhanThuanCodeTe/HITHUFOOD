@@ -11,9 +11,16 @@ class UserAdmin(admin.ModelAdmin):
                     'created_date', 'is_active', 'is_staff', 'is_store_owner', 'store']
     search_fields = ['username', 'first_name', 'last_name', 'phone_number', 'email']
 
+
 class StoreAdmin(admin.ModelAdmin):
     list_display = ['name', 'created_date', 'active', 'average_rating', 'address_line', 'X', 'Y', 'user']
     search_fields = ['name', 'user', 'address_line']
+
+    class Media:
+        css = {
+            'all': ('/static/css/style.css',)
+        }
+
 
 class ToppingInlineFood(admin.StackedInline):
     model = Topping
