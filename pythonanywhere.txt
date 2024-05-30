@@ -1,3 +1,5 @@
+trước tiên phải git stash --> rồi git pull --> :q để thoát
+
 """
 trong Setting
  DATABASE: doi ten Name, User, HOST
