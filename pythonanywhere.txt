@@ -1,0 +1,15 @@
+"""
+trong Setting
+ DATABASE: doi ten Name, User, HOST
+ALLOWED_HOSTS = ['chalf.pythonanywhere.com']
+them bien: 
+import os
+STATIC_ROOT = os.path.join(BASE_DIR, 'static')
+
+kich hoat moi truong: ~/.virtualenvs $ source venv/bin/activate
+pip install -r requirements.txt
+sau do migrate
+
+Vaof Web --> Code --> WSGI configuration file --> project_home = '/home/chalf/HITHUFOOD/HiThuFood'
+--> os.environ['DJANGO_SETTINGS_MODULE'] = 'HiThuFood.settings'
+

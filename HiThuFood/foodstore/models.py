@@ -1,9 +1,8 @@
 from cloudinary.models import CloudinaryField
 from django.contrib.auth.models import AbstractUser
 from django.db import models
-from django.db.models import Avg
-
-from foodstore.utils import get_default_avatar_url
+from django.db.models import Avg, signals
+from django.dispatch import receiver
 
 
 class User(AbstractUser):
@@ -15,15 +14,17 @@ class User(AbstractUser):
     is_store_owner = models.BooleanField(default=False)
     # cho biết là tài khoản vai trò cửa hàng hay không
     # Cần admin xác nhân mới đc là True
-    gender = models.BooleanField(null=False, default=True)
+    is_male = models.BooleanField(null=False, default=True)
     #True la Nam
     followed_stores = models.ManyToManyField('Store', through='UserFollowedStore',
                                              related_name='followers', blank=True, null=True)
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        if not self.avatar:
-            self.avatar = CloudinaryField(get_default_avatar_url())
+    def __str__(self):
+        return self.username
+    def gender(self):
+        if self.is_male == True:
+            return 'Nam'
+        return 'Nữ'
 
 
 class BaseItem(models.Model):
@@ -37,24 +38,37 @@ class BaseItem(models.Model):
 class Store(BaseItem):
     description = models.TextField(blank=True, null=True)
     avatar = CloudinaryField()
-    average_rating = models.FloatField(default=None, null=True)
+    active = models.BooleanField(default=False)
+    #can admin accept
+    average_rating = models.FloatField(blank=True, null=True)
     #user nào là chủ cửa hàng
     user = models.OneToOneField(User, on_delete=models.CASCADE,
                                 related_name='store', null=True, blank=True)
+    address_line = models.CharField(max_length=255, default='Ho Chi Minh City')
+    X = models.CharField(max_length=10, null=True)
+    Y = models.CharField(max_length=10, null=True)
 
-    #vì CloudinaryImage ko có thuộc tính default để thiết lập avatar mặc đinh
-    # nên phải tạo hàm __init__
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        # nếu instance ko gán giá trị cho trươờng avatar
-        # thì gán 1 hình ảnh trên cloudinary làm avatar mặc định
-        if not self.avatar:
-            self.avatar = CloudinaryField(get_default_avatar_url())
+    def __str__(self):
+        return self.name
 
     def update_average_rating(self):
         avg_rating = self.comments.aggregate(Avg('rating'))['rating__avg']
         self.average_rating = avg_rating if avg_rating else 0
         self.save()
+
+# Xử lý admin gán Store.active = true thì user mà nó có khóa ngoại sẽ tự động gán is_store_owner = true
+# khi admin cập nhật trường active trên adminsite
+# Signal handler
+@receiver(signals.post_save, sender=Store)
+def set_store_owner(sender, instance, **kwargs):
+    if instance.active:
+        user = instance.user
+        user.is_store_owner = True
+        user.save()
+
+# Connect the signal
+signals.post_save.connect(set_store_owner, sender=Store)
+
 
 class UserFollowedStore(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='storesthatuserfollowed')
@@ -67,7 +81,7 @@ class UserFollowedStore(models.Model):
 class Comment(models.Model):
     users = models.ForeignKey(User, on_delete=models.CASCADE)
     stores = models.ForeignKey(Store, on_delete=models.CASCADE, related_name='comments')
-    rating = models.IntegerField(default=5)
+    rating = models.PositiveSmallIntegerField(default=5)
     content = models.TextField(null=True, blank=True)
     created_date = models.DateTimeField(auto_now_add=True)
     updated_date = models.DateTimeField(auto_now=True)
@@ -75,12 +89,16 @@ class Comment(models.Model):
 
 
 class Address(models.Model):
-    store = models.OneToOneField('Store', on_delete=models.CASCADE, related_name='address')
-    user = models.ForeignKey('User', on_delete=models.CASCADE, related_name='addresses', null=True)
     # Dòng địa chỉ đầy đủ
     address_line = models.CharField(max_length=255)
-    X = models.CharField(max_length=10)
-    Y = models.CharField(max_length=10)
+    X = models.CharField(max_length=10, null=True)
+    Y = models.CharField(max_length=10, null=True)
+    user = models.ForeignKey('User', on_delete=models.CASCADE, related_name='addresses', null=True)
+
+    def __str__(self):
+        return self.address_line
+
+
 
 class Food(BaseItem):
     image = CloudinaryField()
@@ -97,25 +115,29 @@ class Food(BaseItem):
         self.average_rating = avg_rating if avg_rating else 0
         self.save()
 
+    def __str__(self):
+        return self.name
+
 class SellingTime(models.Model):
     name = models.CharField(max_length=50,)
     start = models.TimeField()
     end = models.TimeField()
+    def __str__(self):
+        return self.name
 
 class Category(models.Model):
     name = models.CharField(max_length=255, unique=True)
+
+    def __str__(self):
+        return self.name
 
 
 class Order(models.Model):
     user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='orders_by_user')
     store = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='orders_for_store')
     order_date = models.DateTimeField(auto_now_add=True)
-    shipping_fee = models.IntegerField(default=15000)
+    shipping_fee = models.IntegerField(null=True)
 
-    @property
-    def total_cost(self):
-        total = sum(item.total_price for item in self.items.all())
-        return total + self.shipping_fee
 
 class OrderItem(models.Model):
     order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='items')
@@ -124,9 +146,10 @@ class OrderItem(models.Model):
     quantity = models.PositiveIntegerField(default=1)
     unit_price_at_order = models.IntegerField()
 
-    @property
-    def total_price(self):
-        return self.unit_price_at_order * self.quantity
+class Order_Item_Topping(models.Model):
+    order_item = models.ForeignKey(OrderItem, on_delete=models.CASCADE, related_name='order_item_topping')
+    toppings = models.ForeignKey('Topping', on_delete=models.SET_NULL, null=True)
+
 
 #user danh gia mon an
 class Review(models.Model):
@@ -141,7 +164,10 @@ class Review(models.Model):
         #1 user chỉ đánh giá 1 lần
         unique_together = ('user', 'food')
 
+class Topping(models.Model):
+    name = models.CharField(max_length=200)
+    price = models.IntegerField(default=0)
+    food = models.ForeignKey(Food, on_delete=models.CASCADE, related_name='toppings')
 
-
-
-
+    def __str__(self):
+        return self.name
