@@ -5,6 +5,7 @@ from rest_framework import permissions
 from drf_yasg.views import get_schema_view
 from drf_yasg import openapi
 
+#swagger
 schema_view = get_schema_view(
     openapi.Info(
         title= 'HithuFood API',
@@ -14,7 +15,7 @@ schema_view = get_schema_view(
         license=openapi.License(name='Duong Hi@2024'),
     ),
     public=True,
-    permission_classes=(permissions.AllowAny,),
+    permission_classes=[permissions.AllowAny,],
 )
 
 urlpatterns = [

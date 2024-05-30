@@ -4,11 +4,8 @@ from foodstore import views
 
 router = DefaultRouter()
 router.register('user', views.UserViewSet)
-# POST: /user/ | GET/PUT/PATCH: /user/{pk}
-
 router.register('store', views.StoreViewSet)
-# POST: /store/ | GET/PUT/PATCH/DELETE: /store/{pk}
-
+router.register('address', views.AddressViewSet)
 
 urlpatterns = [
     path('', include(router.urls)),
