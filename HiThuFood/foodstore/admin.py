@@ -7,7 +7,7 @@ from foodstore.models import *
 from django.utils.html import mark_safe
 
 class UserAdmin(admin.ModelAdmin):
-    list_display = ['username', 'avatar', 'first_name', 'last_name', 'gender', 'email', 'phone_number',
+    list_display = ['username', 'first_name', 'last_name', 'gender', 'email', 'phone_number',
                     'created_date', 'is_active', 'is_staff', 'is_store_owner', 'store']
     search_fields = ['username', 'first_name', 'last_name', 'phone_number', 'email']
 

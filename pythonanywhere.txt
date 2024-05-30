@@ -5,16 +5,16 @@ stash để thêm 1 phiên bản trên github ở cuối file xung đột, sau k
 """
 trong Setting
  DATABASE: doi ten Name, User, HOST
-ALLOWED_HOSTS = ['chalf.pythonanywhere.com']
+ALLOWED_HOSTS = ['chalf333.pythonanywhere.com']
 them bien: 
 import os
 STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 
-kich hoat moi truong: ~/.virtualenvs $ source venv/bin/activate
+kich hoat moi truong: ~/.virtualenvs $ source hithu/bin/activate
 pip install -r requirements.txt
 sau do migrate
 
-Vaof Web --> Code --> WSGI configuration file --> project_home = '/home/chalf/HITHUFOOD/HiThuFood'
+Vaof Web --> Code --> WSGI configuration file --> project_home = '/home/chalf333/HITHUFOOD/HiThuFood'
 --> os.environ['DJANGO_SETTINGS_MODULE'] = 'HiThuFood.settings'
 
 Vao console, cd vao ten project: python manage.py collectstatic
@@ -24,7 +24,11 @@ Vao console, cd vao ten project: python manage.py collectstatic
 
 
 
+Client id
+UnGvujKrwXYsqQCPSfUFFb7b137sEHt024NbRKXW
 
+Client secret
+qla2q6gVpL8kjXd4EXFA962BcL7H0sFayLKiKzwQH4qeqiwVfI6G585UuZmdTS6PkbJIErYZhnQvtSDy9g90fx7UMpylXBMjvIx5EAuWhTvVVyyXD40hJVRp3Z0Ffsqs
 
 
 
@@ -65,7 +69,7 @@ SECRET_KEY = 'django-insecure-b(nvkt!337ifm@f_kxzp4s%okgs=^o&gy6xjr5w&0x6e33!jlx
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['chalf.pythonanywhere.com']
+ALLOWED_HOSTS = ['chalf333.pythonanywhere.com']
 
 import os
 STATIC_ROOT = os.path.join(BASE_DIR, 'static')
@@ -161,10 +165,10 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'chalf$foodapp',
-        'USER': 'chalf',
+        'NAME': 'chalf333$foodapp',
+        'USER': 'chalf333',
         'PASSWORD': 'Admin@123',
-        'HOST': 'chalf.mysql.pythonanywhere-services.com'  # mặc định localhost
+        'HOST': 'chalf333.mysql.pythonanywhere-services.com'  # mặc định localhost
     }
 }
 
