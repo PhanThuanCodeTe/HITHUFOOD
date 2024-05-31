@@ -7,13 +7,13 @@ from foodstore.models import *
 from django.utils.html import mark_safe
 
 class UserAdmin(admin.ModelAdmin):
-    list_display = ['username', 'first_name', 'last_name', 'gender', 'email', 'phone_number',
+    list_display = ['username', 'id', 'first_name', 'last_name', 'gender', 'email', 'phone_number',
                     'created_date', 'is_active', 'is_staff', 'is_store_owner', 'store']
     search_fields = ['username', 'first_name', 'last_name', 'phone_number', 'email']
 
 
 class StoreAdmin(admin.ModelAdmin):
-    list_display = ['name', 'created_date', 'active', 'average_rating', 'address_line', 'X', 'Y', 'user']
+    list_display = ['name', 'id', 'created_date', 'active', 'average_rating', 'address_line', 'X', 'Y', 'user']
     search_fields = ['name', 'user', 'address_line']
 
     class Media:
@@ -22,9 +22,14 @@ class StoreAdmin(admin.ModelAdmin):
         }
 
 
+class CategoryAdmin(admin.ModelAdmin):
+    list_display = ['name', 'id']
+
+
 class ToppingInlineFood(admin.StackedInline):
     model = Topping
     fk_name = 'food'
+
 class FoodAdmin(admin.ModelAdmin):
     list_display = ['name', 'active', 'price', 'average_rating', 'store', 'category']
     inlines = [ToppingInlineFood,]
@@ -35,7 +40,7 @@ class SellingTimeAdmin(admin.ModelAdmin):
 
 
 
-admin.site.register(Category)
+admin.site.register(Category, CategoryAdmin)
 admin.site.register(User, UserAdmin)
 admin.site.register(Store, StoreAdmin)
 admin.site.register(Food, FoodAdmin)

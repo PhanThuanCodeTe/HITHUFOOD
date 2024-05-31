@@ -1,4 +1,5 @@
-trước tiên phải git stash --> rồi git pull --> :q để thoát
+trước tiên phải git stash --> rồi git pull origin main --> :q để thoát
+git pull origin main truoc, neu ko dc thi moi git stash
 
 stash để thêm 1 phiên bản trên github ở cuối file xung đột, sau khi git pull xong, nhớ xóa những dòng cũ trong file xung đột đi
 

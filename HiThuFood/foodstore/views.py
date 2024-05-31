@@ -1,11 +1,12 @@
 from rest_framework import viewsets, generics, parsers, permissions, status
+from rest_framework.decorators import action
 from rest_framework.response import Response
 from foodstore.perms import IsObjectOwner, IsUserOwner, IsStoreOwner
 from foodstore.serializer import *
 
 
 
-class UserViewSet(viewsets.ViewSet, generics.RetrieveAPIView, generics.UpdateAPIView):
+class UserViewSet(viewsets.ViewSet):
     queryset = User.objects.filter(is_active=True)
     serializer_class = UserSerializer
     parser_classes = [parsers.MultiPartParser, ]
@@ -13,7 +14,7 @@ class UserViewSet(viewsets.ViewSet, generics.RetrieveAPIView, generics.UpdateAPI
         if self.action == 'create':
             return [permissions.AllowAny(), ]
         else:
-            return [permissions.IsAuthenticated(), IsUserOwner()]
+            return [permissions.IsAuthenticated()]
 
     def create(self, request):
         instance = request.data
@@ -21,7 +22,22 @@ class UserViewSet(viewsets.ViewSet, generics.RetrieveAPIView, generics.UpdateAPI
                 first_name=instance['first_name'], last_name=instance['last_name'],
                 is_male=instance['gender'], phone_number=instance['phone_number'], email=instance['email'],
              avatar='https://res.cloudinary.com/dsfdkyanf/image/upload/v1715526627/avatar-trang-4_oe9hyo.jpg')
+        
         return Response(data=UserSerializer(user).data, status=status.HTTP_201_CREATED)
+
+    @action(methods=['get', 'patch'], url_path='current-user', detail=False)
+    def get_current_user(self, request):
+        user = request.user
+        if request.method.__eq__('PATCH'):
+            # gán các trường bằng giá trị trong request.data
+            for field, value in request.data.items():
+                # set attribute
+                setattr(user, field, value)
+
+            # goi phuong thuc update de password dc ma hoa và lưu lại
+            UserSerializer().update(instance=user, validated_data=request.data)
+        return Response(UserSerializer(user).data)
+
 
 class StoreViewSet(viewsets.ModelViewSet):
     queryset = Store.objects.all()
@@ -68,6 +84,22 @@ class StoreViewSet(viewsets.ModelViewSet):
                     avatar='https://res.cloudinary.com/dsfdkyanf/image/upload/v1716736944/store_ymq0i5.jpg')
         return Response(data=CreateStoreSerializer(store).data, status=status.HTTP_201_CREATED)
 
+    @action(methods=['post'], url_path='food', detail=True)
+    def add_food(self, request, pk):
+        data = request.data
+        instance = self.get_object()
+        try:
+            category = Category.objects.get(id=data['category'])
+            food = instance.foods.create(name=data['name'], image=data['image'], description=data['description'],
+                        price=data['price'], store=instance, category=category)
+
+        except KeyError:
+            return Response(data='Hãy nhập đầy đủ các trường: name, image, description, price và category',
+                            status=status.HTTP_400_BAD_REQUEST)
+        except Category.DoesNotExist:
+            return Response(data='Category không tồn tại', status=status.HTTP_400_BAD_REQUEST)
+
+        return Response(data=FoodSerializer(food).data, status=status.HTTP_201_CREATED)
 
 class AddressViewSet(viewsets.ModelViewSet):
     queryset = Address.objects.all()
@@ -98,3 +130,13 @@ class AddressViewSet(viewsets.ModelViewSet):
 
         instance.save()
         return Response(data=AddressSerializer(instance).data, status=status.HTTP_200_OK)
+
+
+class CategoryViewSet(viewsets.ViewSet, generics.ListAPIView):
+    queryset = Category.objects.all()
+    serializer_class = CategorySerializer
+
+
+class FoodViewSet(viewsets.ViewSet, generics.DestroyAPIView):
+    queryset = Food.objects.all()
+    serializer_class = FoodSerializer

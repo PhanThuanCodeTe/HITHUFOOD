@@ -21,10 +21,15 @@ class User(AbstractUser):
 
     def __str__(self):
         return self.username
+
     def gender(self):
         if self.is_male == True:
             return 'Nam'
         return 'Nữ'
+    #Lỗi hiển thị: khi tạo user, mặc dù khai báo gender: 1, nhưng nó hiển thị gender là Nữ
+    #Nó chỉ hiện thị thế thôi, chứ trong database sẽ là 1 (Nam)
+    #Lí do là khi bấm Send trên Postman tạo user, thì lúc hiển thị, nó vẫn chưa lưu xuống database
+    # nên is_male == None, => ko return 'Nam' được, => return 'Nữ'
 
 
 class BaseItem(models.Model):
@@ -101,6 +106,7 @@ class Address(models.Model):
 
 
 class Food(BaseItem):
+    name = models.CharField(unique=False, max_length=255, null=False)
     image = CloudinaryField()
     description = models.TextField(blank=True, null=True)
     price = models.IntegerField(default=0)
