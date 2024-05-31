@@ -20,6 +20,7 @@ class AvatarSerializer(ModelSerializer):
             req['avatar'] = instance.avatar
         return req
 
+
 class UserSerializer(AvatarSerializer):
     class Meta:
         model = User
@@ -33,6 +34,7 @@ class UserSerializer(AvatarSerializer):
         #chỉ định username: {read_only: True} vẫn có thể truyền username khi create, còn update thì ko nhận
     def create(self, validated_data):
         user = User(**validated_data)
+        user.is_male = validated_data['gender']
         user.set_password(validated_data['password'])  # mã hóa trường password
         user.save()  # lưu vào dbs
         return user
@@ -48,12 +50,12 @@ class UserSerializer(AvatarSerializer):
 class ListRetrieveStoreSerializer(AvatarSerializer):
     class Meta:
         model = Store
-        fields = ['name', 'description', 'avatar', 'address_line']
+        fields = ['id', 'name', 'description', 'avatar', 'address_line']
 
 class CreateStoreSerializer(AvatarSerializer):
     class Meta:
         model = Store
-        fields = ['name',  'description' , 'avatar', 'active', 'address_line', 'user']
+        fields = ['id', 'name',  'description', 'avatar', 'active', 'address_line', 'user']
         # read_only_fields = ['name', 'active', 'user']  # Không cho phép cập nhật trường active và user qua serializer này
 
     def update(self, instance, validated_data):
@@ -92,3 +94,8 @@ class FoodSerializer(ImageSerializer):
         model = Food
         fields = ['id', 'name', 'image', 'active', 'description', 'price', 'average_rating', 'times', 'store',
                   'category', 'users_review']
+
+class CategorySerializer(ModelSerializer):
+    class Meta:
+        model = Category
+        fields = '__all__'
