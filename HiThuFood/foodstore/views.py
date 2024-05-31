@@ -38,6 +38,17 @@ class UserViewSet(viewsets.ViewSet):
             UserSerializer().update(instance=user, validated_data=request.data)
         return Response(UserSerializer(user).data)
 
+    @action(methods=['post', 'get'], url_path='current-user/address', detail=False)
+    def add_get_address(self, request):
+        user = request.user
+        data = request.data
+        if request.method.__eq__('POST'):
+            Address.objects.create(address_line=data['address_line'], user=user)
+            return Response(UserAddressSerializer(user).data, status=status.HTTP_201_CREATED)
+
+        if request.method.__eq__('GET'):
+            return Response(AddressSerializer(user.addresses, many=True).data, status=status.HTTP_200_OK)
+
 
 class StoreViewSet(viewsets.ModelViewSet):
     queryset = Store.objects.all()
@@ -47,9 +58,12 @@ class StoreViewSet(viewsets.ModelViewSet):
         queryset = self.queryset
         q = self.request.query_params.get('q')
         if q:
-            queryset = queryset.filter(name__icontains=q)
+            queryset = Store.objects.filter(active=True).filter(name__icontains=q)
 
-        if self.action == 'list':
+        # vì action khi lọc theo q cũng là list nên phải thêm dk q ko tồn tại == True
+        # nếu ko kiểm tra q có tồn tại hay k, thì khi q tồn tại đã lọc ra queryset ở trên rồi, xuống dươi
+        # ktra action == list nữa, thì nó vẫn đúng
+        if self.action == 'list' and not q:
             queryset = Store.objects.filter(active=True)
 
         return queryset
@@ -85,7 +99,7 @@ class StoreViewSet(viewsets.ModelViewSet):
         return Response(data=CreateStoreSerializer(store).data, status=status.HTTP_201_CREATED)
 
     @action(methods=['post'], url_path='food', detail=True)
-    def add_food(self, request, pk):
+    def add_food(self, request):
         data = request.data
         instance = self.get_object()
         try:
@@ -101,35 +115,32 @@ class StoreViewSet(viewsets.ModelViewSet):
 
         return Response(data=FoodSerializer(food).data, status=status.HTTP_201_CREATED)
 
-class AddressViewSet(viewsets.ModelViewSet):
+class AddressViewSet(viewsets.ViewSet):
     queryset = Address.objects.all()
     serializer_class = AddressSerializer
     parser_classes = [parsers.MultiPartParser]
+    permission_classes = [permissions.IsAuthenticated, IsObjectOwner]
 
-    def get_permissions(self):
-        if self.action in ['create', 'update', 'partial_update', 'destroy']:
-            return [permissions.IsAuthenticated(), IsObjectOwner()]
-        return [permissions.AllowAny()]
-
-    def create(self, request, *args, **kwargs):
+    def partial_update(self, request, pk):
         data = request.data
-        address = Address.objects.create(address_line=data['address_line'], user=request.user)
-        return Response(data=AddressSerializer(address).data, status=status.HTTP_201_CREATED)
-
-    def partial_update(self, request, *args, **kwargs):
-        instance = self.get_object()
-        data = request.data
-
+        address = Address.objects.get(pk=pk)
         # Only update provided fields
         if 'address_line' in data:
-            instance.address_line = data['address_line']
+            address.address_line = data['address_line']
         if 'X' in data:
-            instance.X = data['X']
+            address.X = data['X']
         if 'Y' in data:
-            instance.Y = data['Y']
+            address.Y = data['Y']
 
-        instance.save()
-        return Response(data=AddressSerializer(instance).data, status=status.HTTP_200_OK)
+        address.save()
+        return Response(data=AddressSerializer(address).data, status=status.HTTP_200_OK)
+
+    def destroy(self, request, pk):
+        address = Address.objects.get(pk=pk)
+        address.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
 
 
 class CategoryViewSet(viewsets.ViewSet, generics.ListAPIView):
