@@ -25,7 +25,7 @@ class UserSerializer(AvatarSerializer):
     class Meta:
         model = User
         fields = ['id', 'username', 'password', 'first_name', 'last_name', 'gender', 'email',
-                  'phone_number', 'avatar']
+                  'phone_number', 'avatar', 'is_store_owner', 'store']
         extra_kwargs = {
             'password': {'write_only': True},
             'username': {'read_only': True}
@@ -46,6 +46,15 @@ class UserSerializer(AvatarSerializer):
         instance.save()
         return instance
 
+class AddressShowingForUser(ModelSerializer):
+    class Meta:
+        model = Address
+        fields = ['address_line']
+class UserAddressSerializer(ModelSerializer):
+    addresses = AddressShowingForUser(many=True)
+    class Meta:
+        model = User
+        fields = ['id', 'username', 'addresses']
 
 class ListRetrieveStoreSerializer(AvatarSerializer):
     class Meta:
@@ -71,7 +80,7 @@ class CreateStoreSerializer(AvatarSerializer):
 class AddressSerializer(ModelSerializer):
     class Meta:
         model = Address
-        fields = ['address_line', 'X', 'Y', 'user']
+        fields = ['id', 'address_line', 'X', 'Y', 'user']
 
 
 class SellingTimeSerializer(ModelSerializer):
