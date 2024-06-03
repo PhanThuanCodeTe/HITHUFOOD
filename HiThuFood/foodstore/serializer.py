@@ -97,12 +97,17 @@ class ReviewSerializer(ImageSerializer):
 
 class FoodSerializer(ImageSerializer):
     times = SellingTimeSerializer(many=True)
-    users_review = ReviewSerializer(many=True)
+    # users_review = ReviewSerializer(many=True)
 
     class Meta:
         model = Food
         fields = ['id', 'name', 'image', 'active', 'description', 'price', 'average_rating', 'times', 'store',
-                  'category', 'users_review']
+                  'category']
+
+class FoodInCategory(ImageSerializer):
+    class Meta:
+        model = Food
+        fields = ['id', 'name', 'image', 'price', 'average_rating', 'store']
 
 class CategorySerializer(ModelSerializer):
     class Meta:
