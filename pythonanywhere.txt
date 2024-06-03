@@ -180,7 +180,8 @@ cloudinary.config(
     cloud_name = "dsfdkyanf",
     api_key = "474893993165787",
     api_secret = "vjNSGVLgza4SMM5pvfRtnx8SFBw", # Click 'View Credentials' below to copy your API secret
-    secure=True
+    secure=True,
+    api_proxy = "http://proxy.server:3128"
 )
 
 REST_FRAMEWORK = {

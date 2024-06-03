@@ -1,6 +1,8 @@
 from rest_framework import viewsets, generics, parsers, permissions, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
+
+from foodstore import paginators
 from foodstore.perms import IsObjectOwner, IsUserOwner, IsStoreOwner
 from foodstore.serializer import *
 
@@ -70,7 +72,7 @@ class StoreViewSet(viewsets.ModelViewSet):
     #Giai thích về action retrieve trong view này:
     def get_permissions(self):
         #bất kì ai đều xem đc list store đã active (queryset trả về ở get_queryset trên kia
-        if self.action == 'list':
+        if self.action in ['list', 'get_food']:
             return [permissions.AllowAny(),]
         # đối với retrieve, thì tất cả user dc xem các store có active = true
         if self.action == 'retrieve':
@@ -82,7 +84,9 @@ class StoreViewSet(viewsets.ModelViewSet):
             # với các store có active=False thì chỉ có user chủ cửa hàng xem dc thôi
             else:
                 return [IsStoreOwner()]
-            #các action còn lại như destroy, update, create thì theo quyền dưới đây
+        # if self.action == 'get_food':
+        #     print(f"====================Action: {self.action}, Permissions: AllowAny")
+            #các action còn lại như destroy, update, create, add_food thì theo quyền dưới đây
         return [IsStoreOwner(), permissions.IsAuthenticated(),]
 
     def destroy(self, request, *args, **kwargs):
@@ -98,10 +102,16 @@ class StoreViewSet(viewsets.ModelViewSet):
                     avatar='https://res.cloudinary.com/dsfdkyanf/image/upload/v1716736944/store_ymq0i5.jpg')
         return Response(data=CreateStoreSerializer(store).data, status=status.HTTP_201_CREATED)
 
-    @action(methods=['post'], url_path='food', detail=True)
-    def add_food(self, request):
-        data = request.data
+    @action(methods=['get'], url_path='foods', detail=True)
+    def get_food(self, request, pk):
         instance = self.get_object()
+        foods = instance.foods
+        return Response(data=FoodSerializer(foods, many=True).data, status=status.HTTP_200_OK)
+
+    @action(methods=['post'], url_path='food', detail=True)
+    def add_food(self, request, pk):
+        instance = self.get_object()
+        data = request.data
         try:
             category = Category.objects.get(id=data['category'])
             food = instance.foods.create(name=data['name'], image=data['image'], description=data['description'],
@@ -114,6 +124,9 @@ class StoreViewSet(viewsets.ModelViewSet):
             return Response(data='Category không tồn tại', status=status.HTTP_400_BAD_REQUEST)
 
         return Response(data=FoodSerializer(food).data, status=status.HTTP_201_CREATED)
+
+
+
 
 class AddressViewSet(viewsets.ViewSet):
     queryset = Address.objects.all()
@@ -146,6 +159,18 @@ class AddressViewSet(viewsets.ViewSet):
 class CategoryViewSet(viewsets.ViewSet, generics.ListAPIView):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
+
+    @action(methods=['get'], url_path='food', detail=True)
+    def get_food(self, request, pk):
+        cate = self.get_object()
+        foods = cate.food_set.select_related('category')
+        paginator = paginators.FoodPaginator()
+        page = paginator.paginate_queryset(foods, request)
+        if page is not None:
+            serializer = FoodInCategory(page, many=True)
+            return paginator.get_paginated_response(data=serializer.data)
+        # neu page = None thì trả hết food ra
+        return Response(data=FoodInCategory(foods, many=True).data, status=status.HTTP_200_OK)
 
 
 class FoodViewSet(viewsets.ViewSet, generics.DestroyAPIView):
