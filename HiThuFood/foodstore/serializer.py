@@ -61,10 +61,10 @@ class ListRetrieveStoreSerializer(AvatarSerializer):
         model = Store
         fields = ['id', 'name', 'description', 'avatar', 'address_line']
 
-class CreateStoreSerializer(AvatarSerializer):
+class StoreSerializer(AvatarSerializer):
     class Meta:
         model = Store
-        fields = ['id', 'name',  'description', 'avatar', 'active', 'address_line', 'user']
+        fields = ['id', 'name',  'description', 'avatar', 'active', 'address_line', 'X', 'Y', 'user']
         # read_only_fields = ['name', 'active', 'user']  # Không cho phép cập nhật trường active và user qua serializer này
 
     def update(self, instance, validated_data):

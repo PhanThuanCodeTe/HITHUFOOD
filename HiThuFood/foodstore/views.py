@@ -71,7 +71,7 @@ class StoreViewSet(viewsets.ModelViewSet):
         return queryset
     #Giai thích về action retrieve trong view này:
     def get_permissions(self):
-        #bất kì ai đều xem đc list store đã active (queryset trả về ở get_queryset trên kia
+        #bất kì ai đều xem đc list store và food của store đã active (queryset trả về ở get_queryset trên kia)
         if self.action in ['list', 'get_food']:
             return [permissions.AllowAny(),]
         # đối với retrieve, thì tất cả user dc xem các store có active = true
@@ -98,9 +98,13 @@ class StoreViewSet(viewsets.ModelViewSet):
     def create(self, request, *args, **kwargs):
         data = request.data
         store = Store.objects.create(name=data['name'], description=data['description'],
-                    address_line=data['address_line'], user=request.user,
+                    address_line=data['address_line'], user=request.user, X=data['X'], Y=data['Y'],
                     avatar='https://res.cloudinary.com/dsfdkyanf/image/upload/v1716736944/store_ymq0i5.jpg')
-        return Response(data=CreateStoreSerializer(store).data, status=status.HTTP_201_CREATED)
+        if data.get('avatar'):
+            store.avatar = data['avatar']
+            store.save()
+
+        return Response(data=StoreSerializer(store).data, status=status.HTTP_201_CREATED)
 
     @action(methods=['get'], url_path='foods', detail=True)
     def get_food(self, request, pk):

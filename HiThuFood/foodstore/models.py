@@ -111,9 +111,10 @@ class Food(BaseItem):
     description = models.TextField(blank=True, null=True)
     price = models.IntegerField(default=0)
     average_rating = models.FloatField(default=0)
+    discount = models.IntegerField(default=0)
     times = models.ManyToManyField('SellingTime', null=True, blank=True, related_name='dishes')
     store = models.ForeignKey(Store, on_delete=models.CASCADE, related_name='foods', null=True)
-    category = models.ForeignKey('Category', on_delete=models.SET_NULL, null=True)
+    category = models.ManyToManyField('Category', null=True)
     users_review = models.ManyToManyField(User, through='Review', blank=True, null=True)
 
     def update_average_rating(self):
