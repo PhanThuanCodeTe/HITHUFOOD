@@ -6,6 +6,7 @@ from django.urls import path
 from foodstore.models import *
 from django.utils.html import mark_safe
 
+
 class UserAdmin(admin.ModelAdmin):
     list_display = ['username', 'id', 'first_name', 'last_name', 'gender', 'email', 'phone_number',
                     'created_date', 'is_active', 'is_staff', 'is_store_owner', 'store']

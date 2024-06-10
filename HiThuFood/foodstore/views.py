@@ -24,19 +24,28 @@ class UserViewSet(viewsets.ViewSet):
                 first_name=instance['first_name'], last_name=instance['last_name'],
                 is_male=instance['gender'], phone_number=instance['phone_number'], email=instance['email'],
              avatar='https://res.cloudinary.com/dsfdkyanf/image/upload/v1715526627/avatar-trang-4_oe9hyo.jpg')
+        if instance.get('avatar'):
+            instance.avatar = instance['avatar']
+            instance.save()
         
         return Response(data=UserSerializer(user).data, status=status.HTTP_201_CREATED)
 
     @action(methods=['get', 'patch'], url_path='current-user', detail=False)
     def get_current_user(self, request):
         user = request.user
+        data = request.data
         if request.method.__eq__('PATCH'):
             # gán các trường bằng giá trị trong request.data
-            for field, value in request.data.items():
+            if 'is_male' in data:
+                return Response('Trường \'is_male\' không tồn tại', status=status.HTTP_400_BAD_REQUEST)
+            if 'gender' in data:
+                user.is_male = data['gender']
+            for field, value in data.items():
                 # set attribute
                 setattr(user, field, value)
 
-            # goi phuong thuc update de password dc ma hoa và lưu lại
+
+                # goi phuong thuc update de password dc ma hoa và lưu lại
             UserSerializer().update(instance=user, validated_data=request.data)
         return Response(UserSerializer(user).data)
 
@@ -45,8 +54,8 @@ class UserViewSet(viewsets.ViewSet):
         user = request.user
         data = request.data
         if request.method.__eq__('POST'):
-            Address.objects.create(address_line=data['address_line'], user=user)
-            return Response(UserAddressSerializer(user).data, status=status.HTTP_201_CREATED)
+            Address.objects.create(address_line=data['address_line'], X=data['X'], Y=data['Y'], user=user)
+            return Response(AddressSerializer(user).data, status=status.HTTP_201_CREATED)
 
         if request.method.__eq__('GET'):
             return Response(AddressSerializer(user.addresses, many=True).data, status=status.HTTP_200_OK)
@@ -54,7 +63,7 @@ class UserViewSet(viewsets.ViewSet):
 
 class StoreViewSet(viewsets.ModelViewSet):
     queryset = Store.objects.all()
-    serializer_class = ListRetrieveStoreSerializer
+    serializer_class = StoreSerializer
     parser_classes = [parsers.MultiPartParser, ]
     def get_queryset(self):
         queryset = self.queryset
@@ -128,8 +137,6 @@ class StoreViewSet(viewsets.ModelViewSet):
             return Response(data='Category không tồn tại', status=status.HTTP_400_BAD_REQUEST)
 
         return Response(data=FoodSerializer(food).data, status=status.HTTP_201_CREATED)
-
-
 
 
 class AddressViewSet(viewsets.ViewSet):

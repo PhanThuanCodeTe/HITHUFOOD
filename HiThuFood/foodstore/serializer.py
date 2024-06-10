@@ -46,20 +46,16 @@ class UserSerializer(AvatarSerializer):
         instance.save()
         return instance
 
-class AddressShowingForUser(ModelSerializer):
-    class Meta:
-        model = Address
-        fields = ['address_line']
-class UserAddressSerializer(ModelSerializer):
-    addresses = AddressShowingForUser(many=True)
-    class Meta:
-        model = User
-        fields = ['id', 'username', 'addresses']
+# class AddressShowingForUser(ModelSerializer):
+#     class Meta:
+#         model = Address
+#         fields = ['address_line', 'X', 'Y']
+# class UserAddressSerializer(ModelSerializer):
+#     addresses = AddressShowingForUser(many=True)
+#     class Meta:
+#         model = User
+#         fields = ['id', 'username', 'addresses']
 
-class ListRetrieveStoreSerializer(AvatarSerializer):
-    class Meta:
-        model = Store
-        fields = ['id', 'name', 'description', 'avatar', 'address_line']
 
 class StoreSerializer(AvatarSerializer):
     class Meta:

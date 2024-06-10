@@ -3,6 +3,8 @@ from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.db.models import Avg, signals
 from django.dispatch import receiver
+from django.core.mail import send_mail
+from django.conf import settings
 
 
 class User(AbstractUser):
@@ -23,7 +25,7 @@ class User(AbstractUser):
         return self.username
 
     def gender(self):
-        if self.is_male == True:
+        if self.is_male is True:
             return 'Nam'
         return 'Nữ'
     #Lỗi hiển thị: khi tạo user, mặc dù khai báo gender: 1, nhưng nó hiển thị gender là Nữ
@@ -70,6 +72,21 @@ def set_store_owner(sender, instance, **kwargs):
         user = instance.user
         user.is_store_owner = True
         user.save()
+#         send_mail('Chúc mừng! Cửa hàng của bạn đã được kích hoạt',
+#                   f'''Xin chào {user.first_name} {user.last_name},
+#
+# Chúc mừng! Chúng tôi rất vui thông báo rằng cửa hàng của bạn trên hệ thống HiThuFood của chúng tôi đã được kích hoạt thành công.
+#
+# Cửa hàng của bạn hiện đã có thể hoạt động và bạn có thể bắt đầu bán hàng ngay lập tức. Đừng ngần ngại liên hệ với chúng tôi nếu bạn cần bất kỳ sự hỗ trợ nào trong quá trình này.
+#
+# Xin cảm ơn bạn đã tham gia vào cộng đồng của chúng tôi và chúc bạn một ngày tốt lành!
+#
+# Trân trọng,
+# HiThuFood''',
+#                   from_email=settings.EMAIL_HOST_USER,
+#                   recipient_list=[user.email],
+#                   fail_silently=False  # thất bại thì im lặng? = True nếu muốn nó ko thông báo khi gởi mail thâất bại
+#                   )
 
 # Connect the signal
 signals.post_save.connect(set_store_owner, sender=Store)
