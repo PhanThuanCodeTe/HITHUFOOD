@@ -54,8 +54,8 @@ class UserViewSet(viewsets.ViewSet):
         user = request.user
         data = request.data
         if request.method.__eq__('POST'):
-            Address.objects.create(address_line=data['address_line'], X=data['X'], Y=data['Y'], user=user)
-            return Response(AddressSerializer(user).data, status=status.HTTP_201_CREATED)
+            address = Address.objects.create(address_line=data['address_line'], X=data['X'], Y=data['Y'], user=user)
+            return Response(AddressSerializer(address).data, status=status.HTTP_201_CREATED)
 
         if request.method.__eq__('GET'):
             return Response(AddressSerializer(user.addresses, many=True).data, status=status.HTTP_200_OK)
@@ -93,9 +93,10 @@ class StoreViewSet(viewsets.ModelViewSet):
             # với các store có active=False thì chỉ có user chủ cửa hàng xem dc thôi
             else:
                 return [IsStoreOwner()]
-        # if self.action == 'get_food':
-        #     print(f"====================Action: {self.action}, Permissions: AllowAny")
-            #các action còn lại như destroy, update, create, add_food thì theo quyền dưới đây
+        #neu muon follow thi phai login
+        if self.action in ['follow']:
+            return [permissions.IsAuthenticated()]
+        #các action còn lại như destroy, update, create, add_food thì theo quyền dưới đây
         return [IsStoreOwner(), permissions.IsAuthenticated(),]
 
     def destroy(self, request, *args, **kwargs):
@@ -115,6 +116,10 @@ class StoreViewSet(viewsets.ModelViewSet):
 
         return Response(data=StoreSerializer(store).data, status=status.HTTP_201_CREATED)
 
+    #không biết nguyên do tại sao mà khi cùng url_path với add_food thì get_permission không nhận diện dc get_food
+    #cụ thể khi url_path của get_food là 'food' thì nó ko thỏa đk để vào block của if này
+    #if self.action in ['list', 'get_food']:
+    #khi đổi thành foods nó mới thỏa điều kiện
     @action(methods=['get'], url_path='foods', detail=True)
     def get_food(self, request, pk):
         instance = self.get_object()
@@ -138,6 +143,15 @@ class StoreViewSet(viewsets.ModelViewSet):
 
         return Response(data=FoodSerializer(food).data, status=status.HTTP_201_CREATED)
 
+    @action(methods=['post'], url_path='follow', detail=True)
+    def follow(self, request, pk):
+        follow, created = UserFollowedStore.objects.get_or_create(store=self.get_object(), user=request.user)
+
+        if not created: #created does not exist (tức là đã follow rồi)
+            follow.delete()
+            return Response(data='Đã hủy theo dõi!', status=status.HTTP_204_NO_CONTENT)
+
+        return Response(FollowSerializer(follow).data, status=status.HTTP_201_CREATED)
 
 class AddressViewSet(viewsets.ViewSet):
     queryset = Address.objects.all()

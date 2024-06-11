@@ -24,6 +24,7 @@ class User(AbstractUser):
     def __str__(self):
         return self.username
 
+    # mục đích của gender() là hiển thị Nam/Nữ trên admin site thay vì 1/0
     def gender(self):
         if self.is_male is True:
             return 'Nam'
@@ -32,6 +33,7 @@ class User(AbstractUser):
     #Nó chỉ hiện thị thế thôi, chứ trong database sẽ là 1 (Nam)
     #Lí do là khi bấm Send trên Postman tạo user, thì lúc hiển thị, nó vẫn chưa lưu xuống database
     # nên is_male == None, => ko return 'Nam' được, => return 'Nữ'
+    # ---> FIXED: trong serializer.py thêm phương thức get_gender
 
 
 class BaseItem(models.Model):

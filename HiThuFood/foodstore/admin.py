@@ -31,18 +31,28 @@ class ToppingInlineFood(admin.StackedInline):
     model = Topping
     fk_name = 'food'
 
+
 class FoodAdmin(admin.ModelAdmin):
     list_display = ['name', 'active', 'price', 'average_rating', 'store']
     inlines = [ToppingInlineFood,]
+
 
 class SellingTimeAdmin(admin.ModelAdmin):
     list_display = ['name', 'start', 'end']
 
 
+class AddressAdmin(admin.ModelAdmin):
+    list_display = ['id', 'address_line', 'X', 'Y', 'user']
+
+
+class FollowAdmin(admin.ModelAdmin):
+    list_display = ['id', 'user', 'store', 'followed_at']
 
 
 admin.site.register(Category, CategoryAdmin)
 admin.site.register(User, UserAdmin)
 admin.site.register(Store, StoreAdmin)
 admin.site.register(Food, FoodAdmin)
+admin.site.register(Address, AddressAdmin)
 admin.site.register(SellingTime, SellingTimeAdmin)
+admin.site.register(UserFollowedStore, FollowAdmin)
