@@ -1,14 +1,17 @@
-from rest_framework.serializers import ModelSerializer
+from django.db.models import Count
+from rest_framework import serializers
 from .models import *
 
+
 # định dạng các trường hình ảnh trả về link cloudinary
-class ImageSerializer(ModelSerializer):
+class ImageSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         req = super().to_representation(instance)
         req['image'] = instance.image.url
         return req
 
-class AvatarSerializer(ModelSerializer):
+
+class AvatarSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         req = super().to_representation(instance)
         # Khi để client gởi 1 hình ảnh lên thì instance.avatar là 1 media object trên cloudinary
@@ -22,6 +25,14 @@ class AvatarSerializer(ModelSerializer):
 
 
 class UserSerializer(AvatarSerializer):
+    #khi tạo 1 instance SerializerMethodField thì phải có def phương thức get_<ten instance>
+    gender = serializers.SerializerMethodField()
+
+    def get_gender(self, user):
+        if user.is_male in ['1', 'True']:   #khi trả json thì nó chỉ hiểu định dạng str nên True và 1 phải để trong ''
+            return 'Nam'
+        return 'Nữ'
+
     class Meta:
         model = User
         fields = ['id', 'username', 'password', 'first_name', 'last_name', 'gender', 'email',
@@ -32,12 +43,14 @@ class UserSerializer(AvatarSerializer):
         }
         #khác với # read_only_fields = ['username']
         #chỉ định username: {read_only: True} vẫn có thể truyền username khi create, còn update thì ko nhận
+
     def create(self, validated_data):
         user = User(**validated_data)
         user.is_male = validated_data['gender']
         user.set_password(validated_data['password'])  # mã hóa trường password
         user.save()  # lưu vào dbs
         return user
+
     def update(self, instance, validated_data):
         #nếu client có update password thì mới mã hóa và lưu xuống db
         # nếu ko có lệnh if dưới đây, server sẽ hiện lôi KeyError: 'password'
@@ -45,16 +58,6 @@ class UserSerializer(AvatarSerializer):
             instance.set_password(validated_data['password'])
         instance.save()
         return instance
-
-# class AddressShowingForUser(ModelSerializer):
-#     class Meta:
-#         model = Address
-#         fields = ['address_line', 'X', 'Y']
-# class UserAddressSerializer(ModelSerializer):
-#     addresses = AddressShowingForUser(many=True)
-#     class Meta:
-#         model = User
-#         fields = ['id', 'username', 'addresses']
 
 
 class StoreSerializer(AvatarSerializer):
@@ -73,13 +76,13 @@ class StoreSerializer(AvatarSerializer):
         return super().update(instance, validated_data)
 
 
-class AddressSerializer(ModelSerializer):
+class AddressSerializer(serializers.ModelSerializer):
     class Meta:
         model = Address
         fields = ['id', 'address_line', 'X', 'Y', 'user']
 
 
-class SellingTimeSerializer(ModelSerializer):
+class SellingTimeSerializer(serializers.ModelSerializer):
     class Meta:
         model = SellingTime
         fields = ['id', 'name']
@@ -93,19 +96,31 @@ class ReviewSerializer(ImageSerializer):
 
 class FoodSerializer(ImageSerializer):
     times = SellingTimeSerializer(many=True)
-    # users_review = ReviewSerializer(many=True)
 
     class Meta:
         model = Food
         fields = ['id', 'name', 'image', 'active', 'description', 'price', 'average_rating', 'times', 'store',
                   'category']
 
+
 class FoodInCategory(ImageSerializer):
     class Meta:
         model = Food
         fields = ['id', 'name', 'image', 'price', 'average_rating', 'store']
 
-class CategorySerializer(ModelSerializer):
+
+class CategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Category
         fields = '__all__'
+
+
+class FollowSerializer(serializers.ModelSerializer):
+    follower_number = serializers.SerializerMethodField()
+
+    def get_follower_number(self, userfollowedstore):
+        return UserFollowedStore.objects.filter(store=userfollowedstore.store).count()
+
+    class Meta:
+        model = UserFollowedStore
+        fields = ['id', 'user', 'store', 'followed_at', 'follower_number']
