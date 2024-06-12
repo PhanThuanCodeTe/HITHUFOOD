@@ -33,7 +33,7 @@ class ToppingInlineFood(admin.StackedInline):
 
 
 class FoodAdmin(admin.ModelAdmin):
-    list_display = ['name', 'active', 'price', 'average_rating', 'store']
+    list_display = ['name', 'id', 'active', 'price', 'average_rating', 'store']
     inlines = [ToppingInlineFood,]
 
 

@@ -144,12 +144,15 @@ class Food(BaseItem):
     def __str__(self):
         return self.name
 
+
 class SellingTime(models.Model):
     name = models.CharField(max_length=50,)
     start = models.TimeField()
     end = models.TimeField()
+
     def __str__(self):
         return self.name
+
 
 class Category(models.Model):
     name = models.CharField(max_length=255, unique=True)
@@ -172,6 +175,7 @@ class OrderItem(models.Model):
     quantity = models.PositiveIntegerField(default=1)
     unit_price_at_order = models.IntegerField()
 
+
 class Order_Item_Topping(models.Model):
     order_item = models.ForeignKey(OrderItem, on_delete=models.CASCADE, related_name='order_item_topping')
     toppings = models.ForeignKey('Topping', on_delete=models.SET_NULL, null=True)
@@ -189,6 +193,7 @@ class Review(models.Model):
     class Meta:
         #1 user chỉ đánh giá 1 lần
         unique_together = ('user', 'food')
+
 
 class Topping(models.Model):
     name = models.CharField(max_length=200)

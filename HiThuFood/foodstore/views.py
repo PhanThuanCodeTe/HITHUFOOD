@@ -123,7 +123,11 @@ class StoreViewSet(viewsets.ModelViewSet):
     @action(methods=['get'], url_path='foods', detail=True)
     def get_food(self, request, pk):
         instance = self.get_object()
-        foods = instance.foods
+        foods = None
+        if instance.user == request.user:
+            foods = instance.foods
+        else:
+            foods = instance.foods.filter(active=True)
         return Response(data=FoodSerializer(foods, many=True).data, status=status.HTTP_200_OK)
 
     @action(methods=['post'], url_path='food', detail=True)
@@ -179,8 +183,6 @@ class AddressViewSet(viewsets.ViewSet):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-
-
 class CategoryViewSet(viewsets.ViewSet, generics.ListAPIView):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
@@ -188,7 +190,7 @@ class CategoryViewSet(viewsets.ViewSet, generics.ListAPIView):
     @action(methods=['get'], url_path='food', detail=True)
     def get_food(self, request, pk):
         cate = self.get_object()
-        foods = cate.food_set.select_related('category')
+        foods = cate.food_set.filter(active=True).prefetch_related('category')
         paginator = paginators.FoodPaginator()
         page = paginator.paginate_queryset(foods, request)
         if page is not None:
@@ -198,6 +200,52 @@ class CategoryViewSet(viewsets.ViewSet, generics.ListAPIView):
         return Response(data=FoodInCategory(foods, many=True).data, status=status.HTTP_200_OK)
 
 
-class FoodViewSet(viewsets.ViewSet, generics.DestroyAPIView):
-    queryset = Food.objects.all()
+class FoodViewSet(viewsets.ViewSet, generics.DestroyAPIView, generics.ListAPIView):
+    queryset = Food.objects.filter(active=True)
     serializer_class = FoodSerializer
+    parser_classes = [parsers.MultiPartParser, ]
+
+    def get_permissions(self):
+        if self.action in ['list']:
+            return [permissions.AllowAny()]
+        return [permissions.IsAuthenticated()]
+
+    def get_queryset(self):
+        queryset = self.queryset
+        q = self.request.query_params.get('q')
+        if q:
+            queryset = queryset.filter(name__icontains=q)
+        if self.action in ['activate_food']:
+            queryset = Food.objects.filter(active=False)
+        return queryset
+
+    def destroy(self, request, *args, **kwargs):
+        user = request.user
+        if self.get_object().store.user != user:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+
+        food = self.get_object()
+        food.active = False
+        food.save()
+
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    @action(methods=['post'], url_path='activate', detail=True)
+    def activate_food(self, request, pk):
+        food = self.get_object()
+        user = request.user
+        if food.store.user != user:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+        food.active = True
+        food.save()
+        return Response(data=FoodSerializer(food).data, status=status.HTTP_200_OK)
+
+    @action(methods=['post'], url_path='topping', detail=True)
+    def add_topping(self, request, pk):
+        food = self.get_object()
+        user = request.user
+        data = request.data
+        if food.store.user != user:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+        topping = Topping.objects.create(name=data['name'], price=data['price'], food=food)
+        return Response(data=ToppingSerializer(topping).data, status=status.HTTP_201_CREATED)
