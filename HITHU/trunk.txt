@@ -1,0 +1,518 @@
+import Home from "./Components/Home/Home";
+import User from "./Components/User/User";
+import Order from "./Components/Order/Order";
+import Follow from "./Components/Follow/Follow";
+import Notification from "./Components/Notification/Notification";
+import Food from "./Components/Food/Food";
+import Login from "./Components/User/Login";
+import Register from "./Components/User/Register";
+import Store from "./Components/Store/Store";
+import StoreCreate from "./Components/Store/StoreCreate";
+
+import AnimatedTabBarIcon from "./Components/AnimatedTabBarIcon/AnimatedTabBarIcon";
+import { StatusBar, Text } from "react-native";
+import { NavigationContainer } from "@react-navigation/native";
+import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
+import { createStackNavigator } from "@react-navigation/stack";
+import AllItems from "./Components/AllItems/AllItems";
+import React from "react";
+import { useNavigation } from "@react-navigation/native";
+import OrderProvider from "./Components/OrderContext/OrderContext";
+
+const Tab = createBottomTabNavigator();
+const Stack = createStackNavigator();
+
+const HomeStack = () => (
+  <Stack.Navigator>
+    <Stack.Screen
+      name="HomeScreen"
+      component={Home}
+      options={{ headerShown: false }}
+    />
+    <Stack.Screen
+      name="Detail"
+      component={Food}
+      options={{ title: 'Chi tiết' }}
+    />
+    <Stack.Screen
+      name="ViewFood"
+      component={AllItems}
+      options={{ title: 'Xem món ăn' }}
+    />
+  </Stack.Navigator>
+);
+
+const UserStack = () => (
+  <Stack.Navigator initialRouteName="User">
+    <Stack.Screen
+      name="User"
+      component={User}
+      options={{ headerShown: false }}
+    />
+    <Stack.Screen
+      name="UserInfo"
+      component={UserInfo}
+      options={{ title: 'Thông tin người dùng' }}
+    />
+    <Stack.Screen
+      name="Store"
+      component={Store}
+      options={{ title: 'Cửa hàng của tôi' }}
+    />
+    <Stack.Screen
+      name="StoreCreate"
+      component={StoreCreate}
+      options={{ title: 'Tạo cửa hàng mới' }}
+    />
+  </Stack.Navigator>
+);
+
+const MainTabNavigator = () => {
+  const navigation = useNavigation();
+
+  return (
+    <Tab.Navigator
+      initialRouteName="Home"
+      screenOptions={({ route }) => ({
+        tabBarActiveTintColor: "green",
+        tabBarInactiveTintColor: "gray",
+        tabBarStyle: {
+          display: "flex",
+        },
+      })}
+    >
+      <Tab.Screen
+        name="Follow"
+        component={Follow}
+        options={{
+          title: 'Theo dõi',
+          tabBarLabel: 'Theo dõi',
+          tabBarIcon: ({ focused, color, size }) => (
+            <AnimatedTabBarIcon
+              name={focused ? "account-heart" : "account-heart-outline"}
+              color={color}
+              size={size}
+              focused={focused}
+              onPress={() => navigation.navigate('Follow')}
+            />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="Order"
+        component={Order}
+        options={{
+          title: 'Đơn hàng',
+          tabBarLabel: 'Đơn hàng',
+          tabBarIcon: ({ focused, color, size }) => (
+            <AnimatedTabBarIcon
+              name={focused ? "cart" : "cart-outline"}
+              color={color}
+              size={size}
+              focused={focused}
+              onPress={() => navigation.navigate('Order')}
+            />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="Home"
+        component={HomeStack}
+        options={{
+          title: 'Trang chủ',
+          tabBarLabel: 'Trang chủ',
+          tabBarIcon: ({ focused, color, size }) => (
+            <AnimatedTabBarIcon
+              name={focused ? "home" : "home-outline"}
+              color={color}
+              size={size}
+              focused={focused}
+              onPress={() => navigation.navigate('Home')}
+            />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="Notification"
+        component={Notification}
+        options={{
+          title: 'Thông báo',
+          tabBarLabel: 'Thông báo',
+          tabBarIcon: ({ focused, color, size }) => (
+            <AnimatedTabBarIcon
+              name={focused ? "bell" : "bell-outline"}
+              color={color}
+              size={size}
+              focused={focused}
+              onPress={() => navigation.navigate('Notification')}
+            />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="User"
+        component={User}
+        options={{
+          title: 'Tài khoản',
+          tabBarLabel: 'Tài khoản',
+          tabBarIcon: ({ focused, color, size }) => (
+            <AnimatedTabBarIcon
+              name={focused ? "account" : "account-outline"}
+              color={color}
+              size={size}
+              focused={focused}
+              onPress={() => navigation.navigate('User')}
+            />
+          ),
+        }}
+      />
+    </Tab.Navigator>
+  );
+};
+
+const App = () => {
+  return (
+    <OrderProvider>
+      <NavigationContainer>
+        <MainTabNavigator />
+      </NavigationContainer>
+    </OrderProvider>
+  );
+};
+
+export default App;
+
+
+import React, { useState, useEffect } from "react";
+import { View, Text, TouchableOpacity, ImageBackground, Alert, Image } from "react-native";
+import Login from "./Login";
+import Register from "./Register";
+import Styles from "./Styles";
+import { Button } from "@rneui/themed";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import axios from "axios";
+import { CLIENT_ID, CLIENT_SECRET } from "@env";
+import APIs, { endpoints } from "../../configs/APIs";
+import UserInfo from "./UserInfo";
+import { useNavigation } from "@react-navigation/native";
+
+const backGround = require("../../Templates/Images/BackGround.png");
+
+const User = () => {
+  const [showRegister, setShowRegister] = useState(false);
+  const [accessToken, setAccessToken] = useState(null);
+  const [userInfo, setUserInfo] = useState(null);
+  const navigation = useNavigation();
+
+  useEffect(() => {
+    const loadToken = async () => {
+      const token = await AsyncStorage.getItem("accessToken");
+      const expirationTime = await AsyncStorage.getItem("expirationTime");
+      const refreshToken = await AsyncStorage.getItem("refreshToken");
+
+      if (token && expirationTime) {
+        const now = new Date().getTime();
+        if (now < parseInt(expirationTime, 10)) {
+          setAccessToken(token);
+          fetchUserInfo(token);
+        } else if (refreshToken) {
+          await refreshAccessToken(refreshToken);
+        } else {
+          await AsyncStorage.removeItem("accessToken");
+          await AsyncStorage.removeItem("expirationTime");
+        }
+      }
+    };
+
+    loadToken();
+  }, []);
+
+  const fetchUserInfo = async (token) => {
+    try {
+      const response = await APIs.get(endpoints['current-user'], {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      setUserInfo(response.data);
+    } catch (error) {
+      console.error("Fetch User Info Error:", error);
+      Alert.alert("Error", "Failed to fetch user information.");
+    }
+  };
+
+  const refreshAccessToken = async (refreshToken) => {
+    const formData = new FormData();
+    formData.append("grant_type", "refresh_token");
+    formData.append("refresh_token", refreshToken);
+    formData.append("client_id", CLIENT_ID);
+    formData.append("client_secret", CLIENT_SECRET);
+
+    try {
+      const response = await APIs.post(endpoints.refreshToken, formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+
+      const { access_token, expires_in, refresh_token } = response.data;
+
+      const expirationTime = new Date().getTime() + expires_in * 1000;
+      await AsyncStorage.setItem("accessToken", access_token);
+      await AsyncStorage.setItem("expirationTime", expirationTime.toString());
+      await AsyncStorage.setItem("refreshToken", refresh_token);
+
+      setAccessToken(access_token);
+      fetchUserInfo(access_token);
+    } catch (error) {
+      console.error("Refresh Token Error:", error);
+      Alert.alert("Error", "Failed to refresh access token. Please login again.");
+    }
+  };
+
+  const handleLoginSuccess = async (token) => {
+    setAccessToken(token);
+    fetchUserInfo(token);
+    Alert.alert("Đăng nhập thành công", "Chúc mừng bạn đã đăng nhập thành công!");
+  };
+
+  const handleLogout = async () => {
+    setAccessToken(null);
+    setUserInfo(null);
+    await AsyncStorage.removeItem("accessToken");
+    await AsyncStorage.removeItem("expirationTime");
+    await AsyncStorage.removeItem("refreshToken");
+    Alert.alert("Đăng xuất", "Đăng xuất thành công!");
+  };
+
+  useEffect(() => {
+    if (userInfo) {
+      navigation.navigate('UserInfo', { userInfo, onLogout: handleLogout });
+    }
+  }, [userInfo]);
+
+  return (
+    <ImageBackground source={backGround} style={Styles.background}>
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        {accessToken ? (
+          userInfo ? (
+            <Text style={Styles.title}>Đang tải thông tin người dùng</Text>
+          ) : (
+            <Text style={Styles.title}>Đang tải thông tin người dùng</Text>
+          )
+        ) : (
+          showRegister ? (
+            <>
+              <Register onRegisterSuccess={() => setShowRegister(false)} />
+              <View style={[{ marginBottom: 50 }, Styles.row]}>
+                <Text>Đã có tài khoản? </Text>
+                <TouchableOpacity onPress={() => setShowRegister(false)}>
+                  <Text style={Styles.switchText}>Quay lại trang đăng nhập</Text>
+                </TouchableOpacity>
+              </View>
+            </>
+          ) : (
+            <>
+              <Login onLoginSuccess={handleLoginSuccess} />
+              <View style={[{ marginBottom: 50 }, Styles.row]}>
+                <Text>Chưa có tài khoản? </Text>
+                <TouchableOpacity onPress={() => setShowRegister(true)}>
+                  <Text style={Styles.switchText}>Đăng ký ngay</Text>
+                </TouchableOpacity>
+              </View>
+            </>
+          )
+        )}
+      </View>
+    </ImageBackground>
+  );
+};
+
+export default User;
+
+app.js 22222
+import React from "react";
+import { NavigationContainer } from "@react-navigation/native";
+import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
+import { createStackNavigator } from "@react-navigation/stack";
+import { useNavigation } from "@react-navigation/native";
+import { StatusBar } from "react-native";
+
+// Import your components
+import Home from "./Components/Home/Home";
+import User from "./Components/User/User";
+import Order from "./Components/Order/Order";
+import Follow from "./Components/Follow/Follow";
+import Notification from "./Components/Notification/Notification";
+import Food from "./Components/Food/Food";
+import AllItems from "./Components/AllItems/AllItems";
+import Store from "./Components/Store/Store";
+import StoreCreate from "./Components/Store/StoreCreate";
+import UserInfo from "./Components/User/UserInfo"; // Make sure this is imported
+
+import AnimatedTabBarIcon from "./Components/AnimatedTabBarIcon/AnimatedTabBarIcon";
+import OrderProvider from "./Components/OrderContext/OrderContext";
+
+// Create navigators
+const Tab = createBottomTabNavigator();
+const Stack = createStackNavigator();
+
+const HomeStack = () => (
+  <Stack.Navigator>
+    <Stack.Screen
+      name="HomeScreen"
+      component={Home}
+      options={{ headerShown: false }}
+    />
+    <Stack.Screen
+      name="Detail"
+      component={Food}
+      options={{ title: 'Chi tiết' }}
+    />
+    <Stack.Screen
+      name="ViewFood"
+      component={AllItems}
+      options={{ title: 'Xem món ăn' }}
+    />
+  </Stack.Navigator>
+);
+
+const UserStack = () => (
+  <Stack.Navigator initialRouteName="User">
+    <Stack.Screen
+      name="User"
+      component={User}
+      options={{ headerShown: false }}
+    />
+    <Stack.Screen
+      name="UserInfo"
+      component={UserInfo}
+      options={{ title: 'Thông tin người dùng' }}
+    />
+    <Stack.Screen
+      name="Store"
+      component={Store}
+      options={{ title: 'Cửa hàng của tôi' }}
+    />
+    <Stack.Screen
+      name="StoreCreate"
+      component={StoreCreate}
+      options={{ title: 'Tạo cửa hàng mới' }}
+    />
+  </Stack.Navigator>
+);
+
+const MainTabNavigator = () => {
+  const navigation = useNavigation();
+
+  return (
+    <Tab.Navigator
+      initialRouteName="Home"
+      screenOptions={({ route }) => ({
+        tabBarActiveTintColor: "green",
+        tabBarInactiveTintColor: "gray",
+        tabBarStyle: {
+          display: "flex",
+        },
+      })}
+    >
+      <Tab.Screen
+        name="Follow"
+        component={Follow}
+        options={{
+          title: 'Theo dõi',
+          tabBarLabel: 'Theo dõi',
+          tabBarIcon: ({ focused, color, size }) => (
+            <AnimatedTabBarIcon
+              name={focused ? "account-heart" : "account-heart-outline"}
+              color={color}
+              size={size}
+              focused={focused}
+              onPress={() => navigation.navigate('Follow')}
+            />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="Order"
+        component={Order}
+        options={{
+          title: 'Đơn hàng',
+          tabBarLabel: 'Đơn hàng',
+          tabBarIcon: ({ focused, color, size }) => (
+            <AnimatedTabBarIcon
+              name={focused ? "cart" : "cart-outline"}
+              color={color}
+              size={size}
+              focused={focused}
+              onPress={() => navigation.navigate('Order')}
+            />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="Home"
+        component={HomeStack}
+        options={{
+          title: 'Trang chủ',
+          tabBarLabel: 'Trang chủ',
+          tabBarIcon: ({ focused, color, size }) => (
+            <AnimatedTabBarIcon
+              name={focused ? "home" : "home-outline"}
+              color={color}
+              size={size}
+              focused={focused}
+              onPress={() => navigation.navigate('Home')}
+            />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="Notification"
+        component={Notification}
+        options={{
+          title: 'Thông báo',
+          tabBarLabel: 'Thông báo',
+          tabBarIcon: ({ focused, color, size }) => (
+            <AnimatedTabBarIcon
+              name={focused ? "bell" : "bell-outline"}
+              color={color}
+              size={size}
+              focused={focused}
+              onPress={() => navigation.navigate('Notification')}
+            />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="User"
+        component={UserStack} // Update to UserStack
+        options={{
+          title: 'Tài khoản',
+          tabBarLabel: 'Tài khoản',
+          tabBarIcon: ({ focused, color, size }) => (
+            <AnimatedTabBarIcon
+              name={focused ? "account" : "account-outline"}
+              color={color}
+              size={size}
+              focused={focused}
+              onPress={() => navigation.navigate('User')}
+            />
+          ),
+        }}
+      />
+    </Tab.Navigator>
+  );
+};
+
+const App = () => {
+  return (
+    <OrderProvider>
+      <NavigationContainer>
+        <MainTabNavigator />
+      </NavigationContainer>
+    </OrderProvider>
+  );
+};
+
+export default App;
