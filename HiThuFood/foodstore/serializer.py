@@ -27,7 +27,7 @@ class AvatarSerializer(serializers.ModelSerializer):
 class UserSerializer(AvatarSerializer):
     #khi tạo 1 instance SerializerMethodField thì phải có def phương thức get_<ten instance>
     gender = serializers.SerializerMethodField()
-
+    #và tham số object phải là tên của model viết thường, VD: muốn truyền 1 object User thì ghi là user
     def get_gender(self, user):
         if user.is_male in ['1', 'True']:   #khi trả json thì nó chỉ hiểu định dạng str nên True và 1 phải để trong ''
             return 'Nam'
@@ -124,3 +124,9 @@ class FollowSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserFollowedStore
         fields = ['id', 'user', 'store', 'followed_at', 'follower_number']
+
+
+class ToppingSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Topping
+        fields = ['id', 'name', 'price', 'food']

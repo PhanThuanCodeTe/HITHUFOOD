@@ -2,6 +2,7 @@ trước tiên phải git stash --> rồi git pull origin main --> :q để tho�
 git pull origin main truoc, neu ko dc thi moi git stash
 
 stash để thêm 1 phiên bản trên github ở cuối file xung đột, sau khi git pull xong, nhớ xóa những dòng cũ trong file xung đột đi
+git stash cũng bỏ qua các file xung đột, các lần git pull sau sẽ ko cập nhật các file đó nữa (nếu file đó ko có sự thay đổi), nếu có thì nó sẽ lỗi tiếp
 
 """
 trong Setting
