@@ -17,7 +17,7 @@ class User(AbstractUser):
     # cho biết là tài khoản vai trò cửa hàng hay không
     # Cần admin xác nhân mới đc là True
     is_male = models.BooleanField(null=False, default=True)
-    #True la Nam
+    # True la Nam
     followed_stores = models.ManyToManyField('Store', through='UserFollowedStore',
                                              related_name='followers', blank=True, null=True)
 
@@ -29,9 +29,9 @@ class User(AbstractUser):
         if self.is_male is True:
             return 'Nam'
         return 'Nữ'
-    #Lỗi hiển thị: khi tạo user, mặc dù khai báo gender: 1, nhưng nó hiển thị gender là Nữ
-    #Nó chỉ hiện thị thế thôi, chứ trong database sẽ là 1 (Nam)
-    #Lí do là khi bấm Send trên Postman tạo user, thì lúc hiển thị, nó vẫn chưa lưu xuống database
+    # Lỗi hiển thị: khi tạo user, mặc dù khai báo gender: 1, nhưng nó hiển thị gender là Nữ
+    # Nó chỉ hiện thị thế thôi, chứ trong database sẽ là 1 (Nam)
+    # Lí do là khi bấm Send trên Postman tạo user, thì lúc hiển thị, nó vẫn chưa lưu xuống database
     # nên is_male == None, => ko return 'Nam' được, => return 'Nữ'
     # ---> FIXED: trong serializer.py thêm phương thức get_gender
 
@@ -44,13 +44,14 @@ class BaseItem(models.Model):
     class Meta:
         abstract = True
 
+
 class Store(BaseItem):
     description = models.TextField(blank=True, null=True)
     avatar = CloudinaryField()
     active = models.BooleanField(default=False)
-    #can admin accept
+    # can admin accept
     average_rating = models.FloatField(blank=True, null=True)
-    #user nào là chủ cửa hàng
+    # user nào là chủ cửa hàng
     user = models.OneToOneField(User, on_delete=models.CASCADE,
                                 related_name='store', null=True, blank=True)
     address_line = models.CharField(max_length=255, default='Ho Chi Minh City')
@@ -65,6 +66,7 @@ class Store(BaseItem):
         self.average_rating = avg_rating if avg_rating else 0
         self.save()
 
+
 # Xử lý admin gán Store.active = true thì user mà nó có khóa ngoại sẽ tự động gán is_store_owner = true
 # khi admin cập nhật trường active trên adminsite
 # Signal handler
@@ -74,21 +76,22 @@ def set_store_owner(sender, instance, **kwargs):
         user = instance.user
         user.is_store_owner = True
         user.save()
-#         send_mail('Chúc mừng! Cửa hàng của bạn đã được kích hoạt',
-#                   f'''Xin chào {user.first_name} {user.last_name},
-#
-# Chúc mừng! Chúng tôi rất vui thông báo rằng cửa hàng của bạn trên hệ thống HiThuFood của chúng tôi đã được kích hoạt thành công.
-#
-# Cửa hàng của bạn hiện đã có thể hoạt động và bạn có thể bắt đầu bán hàng ngay lập tức. Đừng ngần ngại liên hệ với chúng tôi nếu bạn cần bất kỳ sự hỗ trợ nào trong quá trình này.
-#
-# Xin cảm ơn bạn đã tham gia vào cộng đồng của chúng tôi và chúc bạn một ngày tốt lành!
-#
-# Trân trọng,
-# HiThuFood''',
-#                   from_email=settings.EMAIL_HOST_USER,
-#                   recipient_list=[user.email],
-#                   fail_silently=False  # thất bại thì im lặng? = True nếu muốn nó ko thông báo khi gởi mail thâất bại
-#                   )
+        send_mail('Chúc mừng! Cửa hàng của bạn đã được kích hoạt',
+                  f'''Xin chào {user.first_name} {user.last_name},
+
+Chúc mừng! Chúng tôi rất vui thông báo rằng cửa hàng của bạn trên hệ thống HiThuFood của chúng tôi đã được kích hoạt thành công.
+
+Cửa hàng của bạn hiện đã có thể hoạt động và bạn có thể bắt đầu bán hàng ngay lập tức. Đừng ngần ngại liên hệ với chúng tôi nếu bạn cần bất kỳ sự hỗ trợ nào trong quá trình này.
+
+Xin cảm ơn bạn đã tham gia vào cộng đồng của chúng tôi và chúc bạn một ngày tốt lành!
+
+Trân trọng,
+HiThuFood''',
+                  from_email=settings.EMAIL_HOST_USER,
+                  recipient_list=[user.email],
+                  fail_silently=False  # thất bại thì im lặng? = True nếu muốn nó ko thông báo khi gởi mail thâất bại
+                  )
+
 
 # Connect the signal
 signals.post_save.connect(set_store_owner, sender=Store)
@@ -98,6 +101,7 @@ class UserFollowedStore(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='storesthatuserfollowed')
     store = models.ForeignKey(Store, on_delete=models.CASCADE)
     followed_at = models.DateTimeField(auto_now_add=True)
+
     class Meta:
         unique_together = ('user', 'store')
 
@@ -112,7 +116,6 @@ class Comment(models.Model):
     updated_date = models.DateTimeField(auto_now=True)
 
 
-
 class Address(models.Model):
     # Dòng địa chỉ đầy đủ
     address_line = models.CharField(max_length=255)
@@ -122,7 +125,6 @@ class Address(models.Model):
 
     def __str__(self):
         return self.address_line
-
 
 
 class Food(BaseItem):
@@ -147,7 +149,7 @@ class Food(BaseItem):
 
 
 class SellingTime(models.Model):
-    name = models.CharField(max_length=50,)
+    name = models.CharField(max_length=50, )
     start = models.TimeField()
     end = models.TimeField()
 
@@ -172,7 +174,7 @@ class Order(models.Model):
 class OrderItem(models.Model):
     order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='items')
     foods = models.ForeignKey(Food, on_delete=models.CASCADE)
-    #PositiveIntegerField chỉ nhận số không âm
+    # PositiveIntegerField chỉ nhận số không âm
     quantity = models.PositiveIntegerField(default=1)
     unit_price_at_order = models.IntegerField()
 
@@ -182,7 +184,7 @@ class Order_Item_Topping(models.Model):
     toppings = models.ForeignKey('Topping', on_delete=models.SET_NULL, null=True)
 
 
-#user danh gia mon an
+# user danh gia mon an
 class Review(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     food = models.ForeignKey(Food, on_delete=models.CASCADE, related_name='reviews')
@@ -192,7 +194,7 @@ class Review(models.Model):
     created_date = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        #1 user chỉ đánh giá 1 lần
+        # 1 user chỉ đánh giá 1 lần
         unique_together = ('user', 'food')
 
 
