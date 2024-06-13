@@ -101,6 +101,7 @@ class UserFollowedStore(models.Model):
     class Meta:
         unique_together = ('user', 'store')
 
+
 # User đánh giá Store
 class Comment(models.Model):
     users = models.ForeignKey(User, on_delete=models.CASCADE)
