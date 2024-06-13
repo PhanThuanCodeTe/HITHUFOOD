@@ -80,7 +80,7 @@ class StoreViewSet(viewsets.ModelViewSet):
         # vì action khi lọc theo q cũng là list nên phải thêm dk q ko tồn tại == True
         # nếu ko kiểm tra q có tồn tại hay k, thì khi q tồn tại đã lọc ra queryset ở trên rồi, xuống dươi
         # ktra action == list nữa, thì nó vẫn đúng
-        if self.action == 'list' and not q:
+        if (self.action == 'list' and not q) or self.action == 'follow':
             queryset = Store.objects.filter(active=True)
 
         return queryset
@@ -156,6 +156,9 @@ class StoreViewSet(viewsets.ModelViewSet):
 
     @action(methods=['post'], url_path='follow', detail=True)
     def follow(self, request, pk):
+        if request.user == self.get_object().user:
+            return Response(data='Không thể follow cửa hàng của mình')
+
         follow, created = UserFollowedStore.objects.get_or_create(store=self.get_object(), user=request.user)
 
         if not created: #created does not exist (tức là đã follow rồi)
