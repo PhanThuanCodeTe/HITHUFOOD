@@ -94,8 +94,15 @@ class ReviewSerializer(ImageSerializer):
         fields = ['user', 'rating', 'comment', 'image', 'created_date']
 
 
+class CategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Category
+        fields = '__all__'
+
+
 class FoodSerializer(ImageSerializer):
     times = SellingTimeSerializer(many=True)
+    category = CategorySerializer(many=True)
 
     class Meta:
         model = Food
@@ -107,12 +114,6 @@ class FoodInCategory(ImageSerializer):
     class Meta:
         model = Food
         fields = ['id', 'name', 'image', 'price', 'average_rating', 'store']
-
-
-class CategorySerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Category
-        fields = '__all__'
 
 
 class FollowSerializer(serializers.ModelSerializer):
