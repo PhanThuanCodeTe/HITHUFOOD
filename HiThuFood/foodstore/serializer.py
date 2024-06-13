@@ -61,9 +61,14 @@ class UserSerializer(AvatarSerializer):
 
 
 class StoreSerializer(AvatarSerializer):
+    follower_number = serializers.SerializerMethodField()
+
+    def get_follower_number(self, store):
+        return UserFollowedStore.objects.filter(store=store).count()
+
     class Meta:
         model = Store
-        fields = ['id', 'name',  'description', 'avatar', 'active', 'address_line', 'X', 'Y', 'user']
+        fields = ['id', 'name',  'description', 'avatar', 'active', 'address_line', 'X', 'Y', 'user', 'follower_number']
         # read_only_fields = ['name', 'active', 'user']  # Không cho phép cập nhật trường active và user qua serializer này
 
     def update(self, instance, validated_data):
@@ -88,6 +93,12 @@ class SellingTimeSerializer(serializers.ModelSerializer):
         fields = ['id', 'name']
 
 
+class SellingTimeDetailSerializer(SellingTimeSerializer):
+    class Meta:
+        model = SellingTime
+        fields = SellingTimeSerializer.Meta.fields + ['start', 'end']
+
+
 class ReviewSerializer(ImageSerializer):
     class Meta:
         model = Review
@@ -101,8 +112,15 @@ class CategorySerializer(serializers.ModelSerializer):
 
 
 class FoodSerializer(ImageSerializer):
-    times = SellingTimeSerializer(many=True)
-    category = CategorySerializer(many=True)
+    times = serializers.SerializerMethodField()
+
+    def get_times(self, food):
+        return SellingTimeSerializer(food.times, many=True).data
+
+    category = serializers.SerializerMethodField()
+
+    def get_category(self, food):
+        return CategorySerializer(food.category, many=True).data
 
     class Meta:
         model = Food
@@ -117,14 +135,9 @@ class FoodInCategory(ImageSerializer):
 
 
 class FollowSerializer(serializers.ModelSerializer):
-    follower_number = serializers.SerializerMethodField()
-
-    def get_follower_number(self, userfollowedstore):
-        return UserFollowedStore.objects.filter(store=userfollowedstore.store).count()
-
     class Meta:
         model = UserFollowedStore
-        fields = ['id', 'user', 'store', 'followed_at', 'follower_number']
+        fields = ['id', 'user', 'store', 'followed_at']
 
 
 class ToppingSerializer(serializers.ModelSerializer):

@@ -12,6 +12,7 @@ class UserViewSet(viewsets.ViewSet):
     queryset = User.objects.filter(is_active=True)
     serializer_class = UserSerializer
     parser_classes = [parsers.MultiPartParser, ]
+
     def get_permissions(self):
         if self.action == 'create':
             return [permissions.AllowAny(), ]
@@ -44,7 +45,6 @@ class UserViewSet(viewsets.ViewSet):
                 # set attribute
                 setattr(user, field, value)
 
-
                 # goi phuong thuc update de password dc ma hoa và lưu lại
             UserSerializer().update(instance=user, validated_data=request.data)
         return Response(UserSerializer(user).data)
@@ -59,6 +59,12 @@ class UserViewSet(viewsets.ViewSet):
 
         if request.method.__eq__('GET'):
             return Response(AddressSerializer(user.addresses, many=True).data, status=status.HTTP_200_OK)
+
+    @action(methods=['get'], url_path='current-user/followed-store', detail=False)
+    def get_followed_store(self, request):
+        user = request.user
+        return Response(FollowSerializer(user.storesthatuserfollowed, many=True).data,
+                        status=status.HTTP_200_OK)
 
 
 class StoreViewSet(viewsets.ModelViewSet):
@@ -301,3 +307,10 @@ class FoodViewSet(viewsets.ViewSet, generics.DestroyAPIView, generics.ListAPIVie
 
         topping.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class SellingTimeViewSet(viewsets.ViewSet, generics.ListAPIView):
+    queryset = SellingTime.objects.all()
+    serializer_class = SellingTimeDetailSerializer
+    permission_classes = [permissions.AllowAny]
+
