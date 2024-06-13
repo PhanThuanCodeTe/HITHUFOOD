@@ -135,9 +135,10 @@ class StoreViewSet(viewsets.ModelViewSet):
         instance = self.get_object()
         data = request.data
         try:
-            category = Category.objects.get(id=data['category'])
             food = instance.foods.create(name=data['name'], image=data['image'], description=data['description'],
-                        price=data['price'], store=instance, category=category)
+                        price=data['price'], store=instance)
+            data['category'] = data.get('category').split(',')
+            food.category.set(data['category'])
 
         except KeyError:
             return Response(data='Hãy nhập đầy đủ các trường: name, image, description, price và category',
@@ -156,6 +157,7 @@ class StoreViewSet(viewsets.ModelViewSet):
             return Response(data='Đã hủy theo dõi!', status=status.HTTP_204_NO_CONTENT)
 
         return Response(FollowSerializer(follow).data, status=status.HTTP_201_CREATED)
+
 
 class AddressViewSet(viewsets.ViewSet):
     queryset = Address.objects.all()
@@ -186,6 +188,7 @@ class AddressViewSet(viewsets.ViewSet):
 class CategoryViewSet(viewsets.ViewSet, generics.ListAPIView):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
+    permission_classes = [permissions.AllowAny]
 
     @action(methods=['get'], url_path='food', detail=True)
     def get_food(self, request, pk):
@@ -206,7 +209,7 @@ class FoodViewSet(viewsets.ViewSet, generics.DestroyAPIView, generics.ListAPIVie
     parser_classes = [parsers.MultiPartParser, ]
 
     def get_permissions(self):
-        if self.action in ['list']:
+        if self.action in ['list'] or (self.action == 'add_get_topping' and self.request.method == 'GET'):
             return [permissions.AllowAny()]
         return [permissions.IsAuthenticated()]
 
@@ -217,6 +220,9 @@ class FoodViewSet(viewsets.ViewSet, generics.DestroyAPIView, generics.ListAPIVie
             queryset = queryset.filter(name__icontains=q)
         if self.action in ['activate_food']:
             queryset = Food.objects.filter(active=False)
+        # mặc kệ food có active là gì, miễn là chủ store thì có thể xóa đc
+        if self.action in ['delete_topping', 'partial_update']:
+            queryset = Food.objects.all()
         return queryset
 
     def destroy(self, request, *args, **kwargs):
@@ -230,6 +236,29 @@ class FoodViewSet(viewsets.ViewSet, generics.DestroyAPIView, generics.ListAPIVie
 
         return Response(status=status.HTTP_204_NO_CONTENT)
 
+    def partial_update(self, request, pk):
+        food = self.get_object()
+        user = request.user
+        if food.store.user != user:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+
+        # Chỉ cập nhật các trường cụ thể
+        allowed_fields = {'name', 'image', 'description', 'price', 'times', 'category'}
+        data = {key: value for key, value in request.data.items() if key in allowed_fields}
+        data['times'] = data.get('times').split(',')    #data['times'] bay gio la 1 list, ko phai str nua
+        data['category'] = data.get('category').split(',')
+        for key, value in data.items():
+            if key == 'times':
+                food.times.set(data['times'])
+                continue
+            if key == 'category':
+                food.category.set(data.get('category'))
+                continue
+
+            setattr(food, key, value)
+
+        return Response(data=FoodSerializer(food).data, status=status.HTTP_200_OK)
+
     @action(methods=['post'], url_path='activate', detail=True)
     def activate_food(self, request, pk):
         food = self.get_object()
@@ -240,12 +269,35 @@ class FoodViewSet(viewsets.ViewSet, generics.DestroyAPIView, generics.ListAPIVie
         food.save()
         return Response(data=FoodSerializer(food).data, status=status.HTTP_200_OK)
 
-    @action(methods=['post'], url_path='topping', detail=True)
-    def add_topping(self, request, pk):
+    @action(methods=['post', 'get'], url_path='topping', detail=True)
+    def add_get_topping(self, request, pk):
         food = self.get_object()
         user = request.user
-        data = request.data
+        if request.method.__eq__('POST'):
+            data = request.data
+            if food.store.user != user:
+                return Response(status=status.HTTP_403_FORBIDDEN)
+            topping = Topping.objects.create(name=data['name'], price=data['price'], food=food)
+            return Response(data=ToppingSerializer(topping).data, status=status.HTTP_201_CREATED)
+
+        if request.method.__eq__('GET'):
+            return Response(data=ToppingSerializer(food.toppings, many=True).data, status=status.HTTP_200_OK)
+
+    @action(methods=['delete'], url_path='topping/(?P<topping_id>[^/.]+)', detail=True)
+    def delete_topping(self, request, pk, topping_id):
+        food = self.get_object()
+        user = request.user
         if food.store.user != user:
             return Response(status=status.HTTP_403_FORBIDDEN)
-        topping = Topping.objects.create(name=data['name'], price=data['price'], food=food)
-        return Response(data=ToppingSerializer(topping).data, status=status.HTTP_201_CREATED)
+
+        try:
+            topping = Topping.objects.get(id=topping_id)
+        except Topping.DoesNotExist:
+            return Response(f'Topping với ID {topping_id} không tồn tại.', status=status.HTTP_404_NOT_FOUND)
+
+        if not food.toppings.filter(id=topping_id).exists():
+            return Response(f'Món \'{food.name}\' của cửa hàng \'{food.store.name}\' không có topping này',
+                            status=status.HTTP_404_NOT_FOUND)
+
+        topping.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)

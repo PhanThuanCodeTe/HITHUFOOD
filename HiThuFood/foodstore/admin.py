@@ -38,7 +38,7 @@ class FoodAdmin(admin.ModelAdmin):
 
 
 class SellingTimeAdmin(admin.ModelAdmin):
-    list_display = ['name', 'start', 'end']
+    list_display = ['name', 'id', 'start', 'end']
 
 
 class AddressAdmin(admin.ModelAdmin):
@@ -49,6 +49,10 @@ class FollowAdmin(admin.ModelAdmin):
     list_display = ['id', 'user', 'store', 'followed_at']
 
 
+class ToppingAdmin(admin.ModelAdmin):
+    list_display = ['name', 'id', 'price', 'food']
+
+
 admin.site.register(Category, CategoryAdmin)
 admin.site.register(User, UserAdmin)
 admin.site.register(Store, StoreAdmin)
@@ -56,3 +60,4 @@ admin.site.register(Food, FoodAdmin)
 admin.site.register(Address, AddressAdmin)
 admin.site.register(SellingTime, SellingTimeAdmin)
 admin.site.register(UserFollowedStore, FollowAdmin)
+admin.site.register(Topping, ToppingAdmin)
