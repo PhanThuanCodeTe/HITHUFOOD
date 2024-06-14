@@ -53,6 +53,10 @@ class ToppingAdmin(admin.ModelAdmin):
     list_display = ['name', 'id', 'price', 'food']
 
 
+class CommentAdmin(admin.ModelAdmin):
+    list_display = ['id', 'users', 'stores', 'rating', 'created_date', 'updated_date']
+
+
 admin.site.register(Category, CategoryAdmin)
 admin.site.register(User, UserAdmin)
 admin.site.register(Store, StoreAdmin)
@@ -61,3 +65,4 @@ admin.site.register(Address, AddressAdmin)
 admin.site.register(SellingTime, SellingTimeAdmin)
 admin.site.register(UserFollowedStore, FollowAdmin)
 admin.site.register(Topping, ToppingAdmin)
+admin.site.register(Comment, CommentAdmin)

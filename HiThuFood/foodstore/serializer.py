@@ -144,3 +144,9 @@ class ToppingSerializer(serializers.ModelSerializer):
     class Meta:
         model = Topping
         fields = ['id', 'name', 'price', 'food']
+
+
+class CommentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Comment
+        fields = '__all__'
