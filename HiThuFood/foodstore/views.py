@@ -227,8 +227,6 @@ class FoodViewSet(viewsets.ViewSet, generics.DestroyAPIView, generics.ListAPIVie
         q = self.request.query_params.get('q')
         if q:
             queryset = queryset.filter(name__icontains=q)
-        if self.action in ['activate_food']:
-            queryset = Food.objects.filter(active=False)
         # mặc kệ food có active là gì, miễn là chủ store thì có thể xóa đc
         if self.action in ['delete_topping', 'partial_update']:
             queryset = Food.objects.all()
@@ -240,8 +238,7 @@ class FoodViewSet(viewsets.ViewSet, generics.DestroyAPIView, generics.ListAPIVie
             return Response(status=status.HTTP_403_FORBIDDEN)
 
         food = self.get_object()
-        food.active = False
-        food.save()
+        food.delete()
 
         return Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -252,7 +249,7 @@ class FoodViewSet(viewsets.ViewSet, generics.DestroyAPIView, generics.ListAPIVie
             return Response(status=status.HTTP_403_FORBIDDEN)
 
         # Chỉ cập nhật các trường cụ thể
-        allowed_fields = {'name', 'image', 'description', 'price', 'times', 'category'}
+        allowed_fields = {'name', 'image', 'description', 'active', 'price', 'times', 'category'}
         data = {key: value for key, value in request.data.items() if key in allowed_fields}
 
         # nếu có tồn tại mới split, chứ ko tồn tại (None) thì sẽ lỗi vì NoneType ko có split method
@@ -272,16 +269,6 @@ class FoodViewSet(viewsets.ViewSet, generics.DestroyAPIView, generics.ListAPIVie
             setattr(food, key, value)
         food.save()
 
-        return Response(data=FoodSerializer(food).data, status=status.HTTP_200_OK)
-
-    @action(methods=['post'], url_path='activate', detail=True)
-    def activate_food(self, request, pk):
-        food = self.get_object()
-        user = request.user
-        if food.store.user != user:
-            return Response(status=status.HTTP_403_FORBIDDEN)
-        food.active = True
-        food.save()
         return Response(data=FoodSerializer(food).data, status=status.HTTP_200_OK)
 
     @action(methods=['post', 'get'], url_path='topping', detail=True)
