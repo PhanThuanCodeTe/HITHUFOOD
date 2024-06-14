@@ -254,8 +254,13 @@ class FoodViewSet(viewsets.ViewSet, generics.DestroyAPIView, generics.ListAPIVie
         # Chỉ cập nhật các trường cụ thể
         allowed_fields = {'name', 'image', 'description', 'price', 'times', 'category'}
         data = {key: value for key, value in request.data.items() if key in allowed_fields}
-        data['times'] = data.get('times').split(',')    #data['times'] bay gio la 1 list, ko phai str nua
-        data['category'] = data.get('category').split(',')
+
+        # nếu có tồn tại mới split, chứ ko tồn tại (None) thì sẽ lỗi vì NoneType ko có split method
+        if data.get('times'):
+            data['times'] = data.get('times').split(',')    #data['times'] bay gio la 1 list, ko phai str nua
+        if data.get('category'):
+            data['category'] = data.get('category').split(',')
+
         for key, value in data.items():
             if key == 'times':
                 food.times.set(data['times'])
@@ -265,6 +270,7 @@ class FoodViewSet(viewsets.ViewSet, generics.DestroyAPIView, generics.ListAPIVie
                 continue
 
             setattr(food, key, value)
+        food.save()
 
         return Response(data=FoodSerializer(food).data, status=status.HTTP_200_OK)
 
