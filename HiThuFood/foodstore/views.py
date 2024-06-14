@@ -3,7 +3,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from foodstore import paginators
-from foodstore.perms import IsObjectOwner, IsUserOwner, IsStoreOwner
+from foodstore.perms import IsObjectOwner, IsUserOwner, IsStoreOwner, IsCommentOwner
 from foodstore.serializer import *
 
 
@@ -80,29 +80,31 @@ class StoreViewSet(viewsets.ModelViewSet):
         # vì action khi lọc theo q cũng là list nên phải thêm dk q ko tồn tại == True
         # nếu ko kiểm tra q có tồn tại hay k, thì khi q tồn tại đã lọc ra queryset ở trên rồi, xuống dươi
         # ktra action == list nữa, thì nó vẫn đúng
-        if (self.action == 'list' and not q) or self.action == 'follow':
+        # điều kiện thứ 2: khi add hay get comment chỉ khi store có active=True
+        if (self.action == 'list' and not q) or self.action in ['follow', 'comment']:
             queryset = Store.objects.filter(active=True)
 
         return queryset
+
     #Giai thích về action retrieve trong view này:
     def get_permissions(self):
-        #bất kì ai đều xem đc list store và food của store đã active (queryset trả về ở get_queryset trên kia)
-        if self.action in ['list', 'get_food']:
+        # bất kì ai đều xem đc list store và food của store đã active (queryset trả về ở get_queryset trên kia)
+        if self.action in ['list', 'get_food'] or (self.action == 'comment' and self.request.method == 'GET'):
             return [permissions.AllowAny(),]
         # đối với retrieve, thì tất cả user dc xem các store có active = true
         if self.action == 'retrieve':
-            #instance = self.get_object()   #ko dung cau lenh nay vi gay ra loi lặp vô tận trong đệ quy
-            id = self.kwargs.get('pk')  #self.kwargs.get('pk') trả về 1 str
+            # instance = self.get_object()   #ko dung cau lenh nay vi gay ra loi lặp vô tận trong đệ quy
+            id = self.kwargs.get('pk')  # self.kwargs.get('pk') trả về 1 str
             instance = Store.objects.get(pk=id)
             if instance.active == True:
                 return [permissions.AllowAny()]
             # với các store có active=False thì chỉ có user chủ cửa hàng xem dc thôi
             else:
                 return [IsStoreOwner()]
-        #neu muon follow thi phai login
-        if self.action in ['follow']:
+        # neu muon follow thi phai login
+        if self.action in ['follow'] or (self.action == 'comment' and self.request.method == 'POST'):
             return [permissions.IsAuthenticated()]
-        #các action còn lại như destroy, update, create, add_food thì theo quyền dưới đây
+        # các action còn lại như destroy, update, create, add_food thì theo quyền dưới đây
         return [IsStoreOwner(), permissions.IsAuthenticated(),]
 
     def destroy(self, request, *args, **kwargs):
@@ -122,10 +124,10 @@ class StoreViewSet(viewsets.ModelViewSet):
 
         return Response(data=StoreSerializer(store).data, status=status.HTTP_201_CREATED)
 
-    #không biết nguyên do tại sao mà khi cùng url_path với add_food thì get_permission không nhận diện dc get_food
-    #cụ thể khi url_path của get_food là 'food' thì nó ko thỏa đk để vào block của if này
-    #if self.action in ['list', 'get_food']:
-    #khi đổi thành foods nó mới thỏa điều kiện
+    # không biết nguyên do tại sao mà khi cùng url_path với add_food thì get_permission không nhận diện dc get_food
+    # cụ thể khi url_path của get_food là 'food' thì nó ko thỏa đk để vào block của if này
+    # if self.action in ['list', 'get_food']:
+    # khi đổi thành foods nó mới thỏa điều kiện
     @action(methods=['get'], url_path='foods', detail=True)
     def get_food(self, request, pk):
         instance = self.get_object()
@@ -161,11 +163,22 @@ class StoreViewSet(viewsets.ModelViewSet):
 
         follow, created = UserFollowedStore.objects.get_or_create(store=self.get_object(), user=request.user)
 
-        if not created: #created does not exist (tức là đã follow rồi)
+        if not created: # created does not exist (tức là đã follow rồi)
             follow.delete()
             return Response(data='Đã hủy theo dõi!', status=status.HTTP_204_NO_CONTENT)
 
         return Response(FollowSerializer(follow).data, status=status.HTTP_201_CREATED)
+
+    @action(methods=['post', 'get'], url_path='comment', detail=True)
+    def comment(self, request, pk):
+        store = self.get_object()
+        user = request.user
+        data = request.data
+        if request.method.__eq__('POST'):
+            c = store.comments.create(users=user, rating=data['rating'], content=data['content'])
+            return Response(CommentSerializer(c).data, status=status.HTTP_201_CREATED)
+        if request.method.__eq__('GET'):
+            return Response(data=CommentSerializer(store.comments, many=True).data, status=status.HTTP_200_OK)
 
 
 class AddressViewSet(viewsets.ViewSet):
@@ -229,6 +242,10 @@ class FoodViewSet(viewsets.ViewSet, generics.DestroyAPIView, generics.ListAPIVie
             queryset = queryset.filter(name__icontains=q)
         # mặc kệ food có active là gì, miễn là chủ store thì có thể xóa đc
         if self.action in ['delete_topping', 'partial_update']:
+            queryset = Food.objects.all()
+        # nếu là chủ store và thực hiện action lấy danh sách topping của food, thì trả ra tất cả food
+        if self.action in ['add_get_topping'] and self.request.method == 'GET'\
+            and self.request.user == User.objects.get(id=Food.objects.get(id=self.kwargs.get('pk')).store.user.id):
             queryset = Food.objects.all()
         return queryset
 
@@ -309,4 +326,11 @@ class SellingTimeViewSet(viewsets.ViewSet, generics.ListAPIView):
     queryset = SellingTime.objects.all()
     serializer_class = SellingTimeDetailSerializer
     permission_classes = [permissions.AllowAny]
+
+
+class CommentViewSet(viewsets.ViewSet, generics.DestroyAPIView, generics.UpdateAPIView):
+    permission_classes = [permissions.IsAuthenticated, IsCommentOwner]
+    queryset = Comment.objects.all()
+    parser_classes = [parsers.MultiPartParser]
+    serializer_class = CommentSerializer
 
