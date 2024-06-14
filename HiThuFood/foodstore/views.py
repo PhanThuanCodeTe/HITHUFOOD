@@ -1,6 +1,7 @@
 from rest_framework import viewsets, generics, parsers, permissions, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from rest_framework.views import APIView
 
 from foodstore import paginators
 from foodstore.perms import IsObjectOwner, IsUserOwner, IsStoreOwner, IsCommentOwner
@@ -179,6 +180,16 @@ class StoreViewSet(viewsets.ModelViewSet):
             return Response(CommentSerializer(c).data, status=status.HTTP_201_CREATED)
         if request.method.__eq__('GET'):
             return Response(data=CommentSerializer(store.comments, many=True).data, status=status.HTTP_200_OK)
+
+
+class DidFollow(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, store_id):
+        user = request.user
+        did_user_follow = UserFollowedStore.objects.filter(store=store_id, user=user).exists()
+        # phương thức exists() chỉ sử dụng được khi dùng filter(), nếu dùng get() thì bị lỗi
+        return Response(did_user_follow)
 
 
 class AddressViewSet(viewsets.ViewSet):

@@ -13,4 +13,5 @@ router.register('comment', views.CommentViewSet)
 
 urlpatterns = [
     path('', include(router.urls)),
+    path('store/<int:store_id>/didfollow/', views.DidFollow.as_view())
 ]
