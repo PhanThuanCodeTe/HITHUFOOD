@@ -147,9 +147,14 @@ class ToppingSerializer(serializers.ModelSerializer):
 
 
 class CommentSerializer(serializers.ModelSerializer):
+    name = serializers.SerializerMethodField()
+
+    def get_name(self, comment):
+        return comment.users.first_name+ ' ' + comment.users.last_name
+
     class Meta:
         model = Comment
-        fields = '__all__'
+        fields = ['id', 'stores', 'name', 'rating', 'content', 'created_date', 'updated_date']
 
 
 class OrderItemToppingSerializer(serializers.ModelSerializer):
