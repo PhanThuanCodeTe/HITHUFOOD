@@ -57,6 +57,16 @@ class CommentAdmin(admin.ModelAdmin):
     list_display = ['id', 'users', 'stores', 'rating', 'created_date', 'updated_date']
 
 
+class OrderItemInlineAdmin(admin.StackedInline):
+    model = OrderItem
+    fk_name = 'order'
+
+
+class OrderAdmin(admin.ModelAdmin):
+    list_display = ['user', 'store', 'id', 'status', 'order_date']
+    inlines = [OrderItemInlineAdmin, ]
+
+
 admin.site.register(Category, CategoryAdmin)
 admin.site.register(User, UserAdmin)
 admin.site.register(Store, StoreAdmin)
@@ -66,3 +76,4 @@ admin.site.register(SellingTime, SellingTimeAdmin)
 admin.site.register(UserFollowedStore, FollowAdmin)
 admin.site.register(Topping, ToppingAdmin)
 admin.site.register(Comment, CommentAdmin)
+admin.site.register(Order, OrderAdmin)

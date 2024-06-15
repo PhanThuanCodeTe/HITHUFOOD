@@ -150,3 +150,31 @@ class CommentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Comment
         fields = '__all__'
+
+
+class OrderItemToppingSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Order_Item_Topping
+        fields = ['topping']
+
+
+class OrderItemSerializer(serializers.ModelSerializer):
+    order_item_topping = serializers.SerializerMethodField()
+
+    def get_order_item_topping(self, orderitem):
+        return OrderItemToppingSerializer(orderitem.order_item_topping, many=True).data
+
+    class Meta:
+        model = OrderItem
+        fields = ['food', 'quantity', 'unit_price_at_order', 'order_item_topping']
+
+
+class OrderSerializer(serializers.ModelSerializer):
+    items = serializers.SerializerMethodField()
+
+    def get_items(self, order):
+        return OrderItemSerializer(order.items, many=True).data
+
+    class Meta:
+        model = Order
+        fields = ['user', 'store', 'status', 'order_date', 'shipping_fee', 'items']
