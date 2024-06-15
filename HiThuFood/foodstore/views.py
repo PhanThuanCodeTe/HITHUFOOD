@@ -345,3 +345,112 @@ class CommentViewSet(viewsets.ViewSet, generics.DestroyAPIView, generics.UpdateA
     parser_classes = [parsers.MultiPartParser]
     serializer_class = CommentSerializer
 
+
+class OrderViewSet(viewsets.ViewSet, generics.CreateAPIView):
+    queryset = Order.objects.all()
+    serializer_class = OrderSerializer
+
+    def get_permissions(self):
+        if self.action in ['create']:
+            return [permissions.IsAuthenticated(), ]
+
+    def create(self, request, *args, **kwargs):
+        """
+        {
+            "store": 1,
+            "shipping_fee": 15000,
+            "items":
+                [
+                    {
+                        "food": 3,
+                        "quantity": 2,
+                        "order_item_topping":
+                            [
+                                {
+                                  "topping": 1
+                                },
+                                {
+                                  "topping": 2
+                                }
+                            ]
+                    },
+                    {
+                        "food": 4,
+                        "quantity": 1,
+                        "order_item_topping": []
+                    }
+                ]
+        }
+        """
+        data = request.data
+        try:
+            try:
+                store = Store.objects.get(id=data['store'], active=True)
+                if request.user == store.user:
+                    raise Exception('This user cannot place orders in their own store')
+            except Store.DoesNotExist:
+                raise Exception('Store not found')
+
+            order = Order.objects.create(user=request.user, store=store, shipping_fee=data['shipping_fee'])
+            items_order = data['items']  # this is a list
+            for item in items_order:  # item is a dictionary
+                try:
+                    food = Food.objects.get(id=item['food'], active=True)
+                    if food.store != store:
+                        raise Exception(f'Food with id {item["food"]} does not belong to the specified store')
+                except Food.DoesNotExist:
+                    raise Exception(f'Food with id {item["food"]} not found')
+
+                order_item = OrderItem.objects.create(order=order, food=food, quantity=item['quantity'],
+                                                      unit_price_at_order=food.price)
+
+                toppings_data = item.pop('order_item_topping')  # this is a list
+                for topping_data in toppings_data:  # topping_data is a dictionary
+                    try:
+                        topping = Topping.objects.get(id=topping_data['topping'])
+                        if topping.food != food:
+                            raise Exception(
+                                f'Topping with id {topping_data["topping"]} does not belong to the specified food')
+                    except Topping.DoesNotExist:
+                        raise Exception(f'Topping with id {topping_data["topping"]} not found')
+                    else:
+                        Order_Item_Topping.objects.create(order_item=order_item, topping=topping,
+                                                          unit_price_at_order=topping.price)
+
+            order.save()
+            return Response(OrderSerializer(order).data, status=status.HTTP_201_CREATED)
+        except Exception as e:
+            # Xóa các đối tượng đã tạo trong khối try nếu có bất kì ngoại lệ nào được raise
+            # vì khi có ngoại lệ xảy ra thì các đối tượng order, order_item hay order_item_topping được lưu
+            # trước đó (vì ko có ngoại lệ) sẽ trở nên vô nghĩa
+            if 'order' in locals(): # locals(): 1 hàm trả về dictionary chưa các biến local trong scope này
+                # chỉ cần xóa order thì các order_item sẽ xóa theo vì thiết lâp on_delete là CASCADE
+                order.delete()
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=True, methods=['post'])
+    def confirm_order(self, request, pk):
+        order = self.get_object()
+        order.status = 'CONFIRMED'
+        order.save()
+        return Response({'status': 'Order confirmed'})
+
+    @action(detail=True, methods=['post'])
+    def cancel_order(self, request, pk):
+        order = self.get_object()
+        order.delete()
+        return Response({'status': 'Order cancelled'})
+
+    @action(detail=True, methods=['post'])
+    def deliver_order(self, request, pk):
+        order = self.get_object()
+        order.status = 'DELIVERING'
+        order.save()
+        return Response({'status': 'Order is being delivered'})
+
+    @action(detail=True, methods=['post'])
+    def complete_order(self, request, pk):
+        order = self.get_object()
+        order.status = 'DELIVERED'
+        order.save()
+        return Response({'status': 'Order delivered'})

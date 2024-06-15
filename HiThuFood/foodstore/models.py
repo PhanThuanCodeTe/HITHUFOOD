@@ -165,15 +165,22 @@ class Category(models.Model):
 
 
 class Order(models.Model):
-    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='orders_by_user')
-    store = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='orders_for_store')
+    ORDER_STATUS_CHOICES = [
+        ('PENDING', 'Pending'),
+        ('CONFIRMED', 'Confirmed'),
+        ('DELIVERING', 'Delivering'),
+        ('DELIVERED', 'Delivered'),
+    ]
+    user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, related_name='orders_by_user')
+    store = models.ForeignKey(Store, on_delete=models.SET_NULL, null=True, related_name='orders_for_store')
+    status = models.CharField(max_length=20, choices=ORDER_STATUS_CHOICES, default='PENDING')
     order_date = models.DateTimeField(auto_now_add=True)
     shipping_fee = models.IntegerField(null=True)
 
 
 class OrderItem(models.Model):
     order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='items')
-    foods = models.ForeignKey(Food, on_delete=models.CASCADE)
+    food = models.ForeignKey(Food, on_delete=models.SET_NULL, null=True)
     # PositiveIntegerField chỉ nhận số không âm
     quantity = models.PositiveIntegerField(default=1)
     unit_price_at_order = models.IntegerField()
@@ -181,7 +188,8 @@ class OrderItem(models.Model):
 
 class Order_Item_Topping(models.Model):
     order_item = models.ForeignKey(OrderItem, on_delete=models.CASCADE, related_name='order_item_topping')
-    toppings = models.ForeignKey('Topping', on_delete=models.SET_NULL, null=True)
+    topping = models.ForeignKey('Topping', on_delete=models.SET_NULL, null=True)
+    unit_price_at_order = models.IntegerField(null=True)
 
 
 # user danh gia mon an
