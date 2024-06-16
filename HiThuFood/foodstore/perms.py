@@ -1,5 +1,7 @@
 from rest_framework import permissions
 
+from foodstore.models import Store
+
 
 class IsStoreOwner(permissions.BasePermission):
     def has_object_permission(self, request, view, obj):
@@ -24,4 +26,12 @@ class IsCommentOwner(permissions.BasePermission):
         return (
             request.user.is_staff or
             obj.users == request.user
+        )
+
+
+class StoreIsOrderOwner(permissions.BasePermission):
+    def has_object_permission(self, request, view, obj):
+        return (
+            request.user.is_staff is True or
+            obj.store == request.user.store
         )
