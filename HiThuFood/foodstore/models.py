@@ -167,7 +167,7 @@ class Category(models.Model):
 class Order(models.Model):
     ORDER_STATUS_CHOICES = [
         ('PENDING', 'Pending'),
-        ('CONFIRMED', 'Confirmed'),
+        ('CANCELLED', 'Cancelled'),
         ('DELIVERING', 'Delivering'),
         ('DELIVERED', 'Delivered'),
     ]

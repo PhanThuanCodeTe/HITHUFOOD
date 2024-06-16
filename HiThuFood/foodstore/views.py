@@ -4,7 +4,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from foodstore import paginators
-from foodstore.perms import IsObjectOwner, IsUserOwner, IsStoreOwner, IsCommentOwner
+from foodstore.perms import IsObjectOwner, IsStoreOwner, IsCommentOwner, StoreIsOrderOwner
 from foodstore.serializer import *
 
 
@@ -346,14 +346,10 @@ class CommentViewSet(viewsets.ViewSet, generics.DestroyAPIView, generics.UpdateA
     serializer_class = CommentSerializer
 
 
-class OrderViewSet(viewsets.ViewSet, generics.CreateAPIView):
+class OrderViewSet(viewsets.ViewSet, generics.CreateAPIView, generics.RetrieveAPIView):
     queryset = Order.objects.all()
     serializer_class = OrderSerializer
-    permission_classes = [permissions.IsAuthenticated]
-
-    # def get_permissions(self):
-    #     if self.action in ['create']:
-    #         return [permissions.IsAuthenticated(), ]
+    permission_classes = [permissions.IsAuthenticated, ]
 
     def create(self, request, *args, **kwargs):
         """
@@ -430,26 +426,59 @@ class OrderViewSet(viewsets.ViewSet, generics.CreateAPIView):
             # Xóa các đối tượng đã tạo trong khối try nếu có bất kì ngoại lệ nào được raise
             # vì khi có ngoại lệ xảy ra thì các đối tượng order, order_item hay order_item_topping được lưu
             # trước đó (vì ko có ngoại lệ) sẽ trở nên vô nghĩa
-            if 'order' in locals(): # locals(): 1 hàm trả về dictionary chưa các biến local trong scope này
+            if 'order' in locals(): # locals(): 1 hàm trả về dictionary chứa các biến local trong scope này
                 # chỉ cần xóa order thì các order_item sẽ xóa theo vì thiết lâp on_delete là CASCADE
                 order.delete()
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
-    @action(methods=['get'], url_path='order-of-my-store', detail=False)
+    @action(methods=['get'], url_path='pending-order-of-my-store', detail=False)
     def get_order(self, request):
         try:
             my_store = request.user.store
         except Store.DoesNotExist:
             return Response('Error: You do not have a store', status=status.HTTP_404_NOT_FOUND)
+        # tra ve cac order của store của request.user
         return Response(OrderSerializer(my_store.orders_for_store.filter(status='PENDING'), many=True).data,
                         status=status.HTTP_200_OK)
 
-    @action(detail=True, methods=['post'], url_path='(?P<topping_id>[^/.]+)')
+    # store và user xem chi tiet order của mình
+    def retrieve(self, request, *args, **kwargs):
+        try:
+            order = self.get_object()
+        except Order.DoesNotExist:
+            return Response('Error: Order not found', status=status.HTTP_404_NOT_FOUND)
+        try:
+            my_store = request.user.store
+        # neu user ko co store, suy ra, order khong thuoc ve store cua user
+        except Store.DoesNotExist:
+            # neu order nay ko phai cua user
+            if order.user != request.user:
+                return Response(f'Error: This order with id {order.id} does not belong to you or your store',
+                                status=status.HTTP_404_NOT_FOUND)
+        # neu user co store thi kiem tra order co thuoc store khong
+        finally:
+            if my_store != order.store:
+                return Response(f'Error: This order with id {order.id} does not belong to you or your store',
+                                status=status.HTTP_404_NOT_FOUND)
+            return Response(OrderSerializer(order).data, status=status.HTTP_200_OK)
+
+
+
+    @action(detail=True, methods=['post'], url_path='confirm-order')
     def confirm_order(self, request, pk):
         order = self.get_object()
-        order.status = 'CONFIRMED'
+        try:
+            my_store = request.user.store
+        except Store.DoesNotExist:
+            return Response('Error: You do not have a store', status=status.HTTP_404_NOT_FOUND)
+        if order.store != my_store:
+            return Response(f'Error: This order with id {order.id} does not belong to your store',
+                            status=status.HTTP_404_NOT_FOUND)
+        if order.status != 'PENDING':
+            return Response('Error: Chỉ được confirm các order có status là Pending', status=status.HTTP_400_BAD_REQUEST)
+        order.status = 'DELIVERING'
         order.save()
-        return Response({'status': 'Order confirmed'})
+        return Response(OrderSerializer(order).data, status=status.HTTP_200_OK)
 
     @action(detail=True, methods=['post'])
     def cancel_order(self, request, pk):
@@ -457,16 +486,11 @@ class OrderViewSet(viewsets.ViewSet, generics.CreateAPIView):
         order.delete()
         return Response({'status': 'Order cancelled'})
 
-    @action(detail=True, methods=['post'])
-    def deliver_order(self, request, pk):
-        order = self.get_object()
-        order.status = 'DELIVERING'
-        order.save()
-        return Response({'status': 'Order is being delivered'})
-
-    @action(detail=True, methods=['post'])
+    @action(detail=True, methods=['post'], url_path='confirm-receipt')
     def complete_order(self, request, pk):
         order = self.get_object()
+        if order.status != 'DELIVERING':
+            return Response('Error: Store has not confirmed', status=status.HTTP_400_BAD_REQUEST)
         order.status = 'DELIVERED'
         order.save()
-        return Response({'status': 'Order delivered'})
+        return Response(OrderSerializer(order).data, status=status.HTTP_200_OK)
