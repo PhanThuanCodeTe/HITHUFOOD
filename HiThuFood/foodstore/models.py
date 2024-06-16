@@ -175,6 +175,7 @@ class Order(models.Model):
     store = models.ForeignKey(Store, on_delete=models.SET_NULL, null=True, related_name='orders_for_store')
     status = models.CharField(max_length=20, choices=ORDER_STATUS_CHOICES, default='PENDING')
     order_date = models.DateTimeField(auto_now_add=True)
+    total = models.IntegerField(null=True)
     shipping_fee = models.IntegerField(null=True)
 
 

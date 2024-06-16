@@ -63,7 +63,7 @@ class OrderItemInlineAdmin(admin.StackedInline):
 
 
 class OrderAdmin(admin.ModelAdmin):
-    list_display = ['user', 'store', 'id', 'status', 'order_date']
+    list_display = ['user', 'store', 'id', 'status', 'order_date', 'shipping_fee', 'total']
     inlines = [OrderItemInlineAdmin, ]
 
 
