@@ -180,6 +180,11 @@ class OrderSerializer(serializers.ModelSerializer):
     def get_items(self, order):
         return OrderItemSerializer(order.items, many=True).data
 
+    food_price = serializers.SerializerMethodField()
+
+    def get_food_price(self, order):
+        return order.total - order.shipping_fee
+
     class Meta:
         model = Order
-        fields = ['user', 'store', 'status', 'order_date', 'shipping_fee', 'items']
+        fields = ['user', 'store', 'status', 'order_date', 'food_price' ,'shipping_fee', 'total', 'items']

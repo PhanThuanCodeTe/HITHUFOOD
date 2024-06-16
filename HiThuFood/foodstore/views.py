@@ -236,13 +236,13 @@ class CategoryViewSet(viewsets.ViewSet, generics.ListAPIView):
         return Response(data=FoodInCategory(foods, many=True).data, status=status.HTTP_200_OK)
 
 
-class FoodViewSet(viewsets.ViewSet, generics.DestroyAPIView, generics.ListAPIView):
+class FoodViewSet(viewsets.ViewSet, generics.DestroyAPIView, generics.ListAPIView, generics.RetrieveAPIView):
     queryset = Food.objects.filter(active=True)
     serializer_class = FoodSerializer
     parser_classes = [parsers.MultiPartParser, ]
 
     def get_permissions(self):
-        if self.action in ['list'] or (self.action == 'add_get_topping' and self.request.method == 'GET'):
+        if self.action in ['list', 'retrieve'] or (self.action == 'add_get_topping' and self.request.method == 'GET'):
             return [permissions.AllowAny()]
         return [permissions.IsAuthenticated()]
 
@@ -349,10 +349,11 @@ class CommentViewSet(viewsets.ViewSet, generics.DestroyAPIView, generics.UpdateA
 class OrderViewSet(viewsets.ViewSet, generics.CreateAPIView):
     queryset = Order.objects.all()
     serializer_class = OrderSerializer
+    permission_classes = [permissions.IsAuthenticated]
 
-    def get_permissions(self):
-        if self.action in ['create']:
-            return [permissions.IsAuthenticated(), ]
+    # def get_permissions(self):
+    #     if self.action in ['create']:
+    #         return [permissions.IsAuthenticated(), ]
 
     def create(self, request, *args, **kwargs):
         """
@@ -391,7 +392,7 @@ class OrderViewSet(viewsets.ViewSet, generics.CreateAPIView):
             except Store.DoesNotExist:
                 raise Exception('Store not found')
 
-            order = Order.objects.create(user=request.user, store=store, shipping_fee=data['shipping_fee'])
+            order = Order.objects.create(user=request.user, store=store, total=0)
             items_order = data['items']  # this is a list
             for item in items_order:  # item is a dictionary
                 try:
@@ -403,6 +404,7 @@ class OrderViewSet(viewsets.ViewSet, generics.CreateAPIView):
 
                 order_item = OrderItem.objects.create(order=order, food=food, quantity=item['quantity'],
                                                       unit_price_at_order=food.price)
+                order.total += order_item.unit_price_at_order
 
                 toppings_data = item.pop('order_item_topping')  # this is a list
                 for topping_data in toppings_data:  # topping_data is a dictionary
@@ -414,11 +416,16 @@ class OrderViewSet(viewsets.ViewSet, generics.CreateAPIView):
                     except Topping.DoesNotExist:
                         raise Exception(f'Topping with id {topping_data["topping"]} not found')
                     else:
-                        Order_Item_Topping.objects.create(order_item=order_item, topping=topping,
+                        order_item_topping = Order_Item_Topping.objects.create(order_item=order_item, topping=topping,
                                                           unit_price_at_order=topping.price)
+                        order.total += order_item_topping.unit_price_at_order
+                order.total *= order_item.quantity
 
+            order.total += data['shipping_fee']
+            order.shipping_fee = data['shipping_fee']
             order.save()
             return Response(OrderSerializer(order).data, status=status.HTTP_201_CREATED)
+
         except Exception as e:
             # Xóa các đối tượng đã tạo trong khối try nếu có bất kì ngoại lệ nào được raise
             # vì khi có ngoại lệ xảy ra thì các đối tượng order, order_item hay order_item_topping được lưu
@@ -428,7 +435,16 @@ class OrderViewSet(viewsets.ViewSet, generics.CreateAPIView):
                 order.delete()
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
-    @action(detail=True, methods=['post'])
+    @action(methods=['get'], url_path='order-of-my-store', detail=False)
+    def get_order(self, request):
+        try:
+            my_store = request.user.store
+        except Store.DoesNotExist:
+            return Response('Error: You do not have a store', status=status.HTTP_404_NOT_FOUND)
+        return Response(OrderSerializer(my_store.orders_for_store.filter(status='PENDING'), many=True).data,
+                        status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=['post'], url_path='(?P<topping_id>[^/.]+)')
     def confirm_order(self, request, pk):
         order = self.get_object()
         order.status = 'CONFIRMED'
