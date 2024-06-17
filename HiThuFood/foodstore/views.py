@@ -66,6 +66,10 @@ class UserViewSet(viewsets.ViewSet):
         return Response(FollowSerializer(user.storesthatuserfollowed, many=True).data,
                         status=status.HTTP_200_OK)
 
+    @action(methods=['get'], url_path='current-user/my-order', detail=False)
+    def get_order(self, request):
+        return Response(OrderSerializer(request.user.orders_by_user, many=True), status=status.HTTP_200_OK)
+
 
 class StoreViewSet(viewsets.ModelViewSet):
     queryset = Store.objects.all()
@@ -490,3 +494,5 @@ class OrderViewSet(viewsets.ViewSet, generics.CreateAPIView, generics.RetrieveAP
         order.status = 'DELIVERED'
         order.save()
         return Response(OrderSerializer(order).data, status=status.HTTP_200_OK)
+
+
