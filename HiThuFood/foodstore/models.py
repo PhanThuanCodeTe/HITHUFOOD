@@ -177,6 +177,7 @@ class Order(models.Model):
     order_date = models.DateTimeField(auto_now_add=True)
     total = models.IntegerField(null=True)
     shipping_fee = models.IntegerField(null=True)
+    address = models.ForeignKey(Address, on_delete=models.SET_NULL, null=True)
 
 
 class OrderItem(models.Model):

@@ -3,10 +3,9 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from foodstore import paginators
-from foodstore.perms import IsObjectOwner, IsStoreOwner, IsCommentOwner, StoreIsOrderOwner
+from foodstore import paginators, utils
+from foodstore.perms import IsObjectOwner, IsStoreOwner, IsCommentOwner, IsOrderOwner
 from foodstore.serializer import *
-
 
 
 class UserViewSet(viewsets.ViewSet):
@@ -349,11 +348,16 @@ class CommentViewSet(viewsets.ViewSet, generics.DestroyAPIView, generics.UpdateA
 class OrderViewSet(viewsets.ViewSet, generics.CreateAPIView, generics.RetrieveAPIView):
     queryset = Order.objects.all()
     serializer_class = OrderSerializer
-    permission_classes = [permissions.IsAuthenticated, ]
+
+    def get_permissions(self):
+        if self.action in ['retrieve', 'cancel_order']:
+            return [permissions.IsAuthenticated(), IsOrderOwner(), ]
+        return [permissions.IsAuthenticated(), ]
 
     def create(self, request, *args, **kwargs):
         """
         {
+            "address": 1
             "store": 1,
             "shipping_fee": 15000,
             "items":
@@ -383,12 +387,14 @@ class OrderViewSet(viewsets.ViewSet, generics.CreateAPIView, generics.RetrieveAP
         try:
             try:
                 store = Store.objects.get(id=data['store'], active=True)
+                address = Address.objects.get(id=data['address'])
                 if request.user == store.user:
                     raise Exception('This user cannot place orders in their own store')
             except Store.DoesNotExist:
                 raise Exception('Store not found')
 
-            order = Order.objects.create(user=request.user, store=store, total=0)
+            order = Order.objects.create(user=request.user, store=store, total=0, shipping_fee=data['shipping_fee'],
+                                         address=address)
             items_order = data['items']  # this is a list
             for item in items_order:  # item is a dictionary
                 try:
@@ -418,7 +424,6 @@ class OrderViewSet(viewsets.ViewSet, generics.CreateAPIView, generics.RetrieveAP
                 order.total *= order_item.quantity
 
             order.total += data['shipping_fee']
-            order.shipping_fee = data['shipping_fee']
             order.save()
             return Response(OrderSerializer(order).data, status=status.HTTP_201_CREATED)
 
@@ -441,29 +446,6 @@ class OrderViewSet(viewsets.ViewSet, generics.CreateAPIView, generics.RetrieveAP
         return Response(OrderSerializer(my_store.orders_for_store.filter(status='PENDING'), many=True).data,
                         status=status.HTTP_200_OK)
 
-    # store và user xem chi tiet order của mình
-    def retrieve(self, request, *args, **kwargs):
-        try:
-            order = self.get_object()
-        except Order.DoesNotExist:
-            return Response('Error: Order not found', status=status.HTTP_404_NOT_FOUND)
-        try:
-            my_store = request.user.store
-        # neu user ko co store, suy ra, order khong thuoc ve store cua user
-        except Store.DoesNotExist:
-            # neu order nay ko phai cua user
-            if order.user != request.user:
-                return Response(f'Error: This order with id {order.id} does not belong to you or your store',
-                                status=status.HTTP_404_NOT_FOUND)
-        # neu user co store thi kiem tra order co thuoc store khong
-        finally:
-            if my_store != order.store:
-                return Response(f'Error: This order with id {order.id} does not belong to you or your store',
-                                status=status.HTTP_404_NOT_FOUND)
-            return Response(OrderSerializer(order).data, status=status.HTTP_200_OK)
-
-
-
     @action(detail=True, methods=['post'], url_path='confirm-order')
     def confirm_order(self, request, pk):
         order = self.get_object()
@@ -480,15 +462,29 @@ class OrderViewSet(viewsets.ViewSet, generics.CreateAPIView, generics.RetrieveAP
         order.save()
         return Response(OrderSerializer(order).data, status=status.HTTP_200_OK)
 
-    @action(detail=True, methods=['post'])
+    @action(detail=True, methods=['delete'], url_path='cancel-order')
     def cancel_order(self, request, pk):
         order = self.get_object()
-        order.delete()
-        return Response({'status': 'Order cancelled'})
+        if order.status != 'PENDING':
+            return Response('Error: Chỉ được hủy các order có status là Pending',
+                            status=status.HTTP_400_BAD_REQUEST)
+        # sau khi kiểm tra quyền đối với order thì giờ chỉ có thể có 1 người có thể truy cập vào
+        # giờ phải kiểm tra ngươi đó là user đặt hàng hay user chủ store được đặt hàng
+        # mỗi người sẽ có cách xử lý khác nhau
+        if utils.is_user_order_owner(order=order, user=request.user) is True:
+            order.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        if utils.is_store_order_owner(order=order, store=request.user.store) is True:
+            order.status = 'CANCELLED'
+            order.save()
+            return Response({'status': 'Order cancelled'}, status=status.HTTP_204_NO_CONTENT)
 
     @action(detail=True, methods=['post'], url_path='confirm-receipt')
     def complete_order(self, request, pk):
         order = self.get_object()
+        if utils.is_user_order_owner(order=order, user=request.user) is False:
+            return Response(f'Error: This order with id {order.id} does not belong to you',
+                     status=status.HTTP_403_FORBIDDEN)
         if order.status != 'DELIVERING':
             return Response('Error: Store has not confirmed', status=status.HTTP_400_BAD_REQUEST)
         order.status = 'DELIVERED'
