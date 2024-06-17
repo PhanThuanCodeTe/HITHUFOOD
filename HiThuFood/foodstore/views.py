@@ -496,7 +496,33 @@ class OrderViewSet(viewsets.ViewSet, generics.CreateAPIView, generics.RetrieveAP
         return Response(OrderSerializer(order).data, status=status.HTTP_200_OK)
 
 
-# class ReviewViewSet(viewsets.ModelViewSet):
-#     queryset = Review.objects.all()
-#     parser_classes = [parsers.MultiPartParser ]
-#     serializer_class =
+class ReviewViewSet(viewsets.ModelViewSet):
+    queryset = Review.objects.all()
+    parser_classes = [parsers.MultiPartParser ]
+    serializer_class = ReviewSerializer
+    permission_classes = [permissions.IsAuthenticated, IsObjectOwner]
+
+    def create(self, request, *args, **kwargs):
+        data = request.data
+        try:
+            food = Food.objects.get(id=data['food'])
+        except Exception as e:
+            return Response(f'Error: {str(e)}', status=status.HTTP_400_BAD_REQUEST)
+        try:
+            OrderItem.objects.filter(order__user=request.user, food=food)
+        except OrderItem.DoesNotExist:
+            return Response('Error: Bạn chưa mua món này', status=status.HTTP_403_FORBIDDEN)
+        else:
+            try:
+                existence = Review.objects.get(user=request.user, food=food)
+            except Review.DoesNotExist:
+                review = Review.objects.create(user=request.user, food=food, rating=data['rating'],
+                                               comment=data['comment'], image=None)
+                if 'image' in data:
+                    review.image = data['image']
+                return Response(ReviewSerializer(review).data, status=status.HTTP_201_CREATED)
+            else:
+                return Response({'Error': 'Bạn đã đánh giá món này rồi', 'id': existence.id},
+                                status=status.HTTP_400_BAD_REQUEST)
+
+

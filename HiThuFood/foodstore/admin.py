@@ -67,6 +67,10 @@ class OrderAdmin(admin.ModelAdmin):
     inlines = [OrderItemInlineAdmin, ]
 
 
+class ReviewAdmin(admin.ModelAdmin):
+    list_display = ['id', 'user', 'food', 'rating', 'created_date', 'updated_date']
+
+
 admin.site.register(Category, CategoryAdmin)
 admin.site.register(User, UserAdmin)
 admin.site.register(Store, StoreAdmin)
@@ -77,3 +81,4 @@ admin.site.register(UserFollowedStore, FollowAdmin)
 admin.site.register(Topping, ToppingAdmin)
 admin.site.register(Comment, CommentAdmin)
 admin.site.register(Order, OrderAdmin)
+admin.site.register(Review, ReviewAdmin)
