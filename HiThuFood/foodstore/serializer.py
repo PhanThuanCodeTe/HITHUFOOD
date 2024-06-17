@@ -158,9 +158,14 @@ class CommentSerializer(serializers.ModelSerializer):
 
 
 class OrderItemToppingSerializer(serializers.ModelSerializer):
+    topping_name = serializers.SerializerMethodField()
+
+    def get_topping_name(self, topping_in_order):
+        return topping_in_order.topping.name
+
     class Meta:
         model = Order_Item_Topping
-        fields = ['topping']
+        fields = ['topping', 'topping_name', 'unit_price_at_order']
 
 
 class OrderItemSerializer(serializers.ModelSerializer):
@@ -200,4 +205,5 @@ class OrderSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Order
-        fields = ['id', 'address', 'user', 'user_name', 'store', 'status', 'order_date', 'food_price' ,'shipping_fee', 'total', 'items']
+        fields = ['id', 'address', 'user', 'user_name', 'store', 'status', 'order_date', 'food_price',
+                  'shipping_fee', 'total', 'items']
