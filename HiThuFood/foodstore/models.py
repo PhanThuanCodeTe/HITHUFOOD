@@ -61,11 +61,6 @@ class Store(BaseItem):
     def __str__(self):
         return self.name
 
-    def update_average_rating(self):
-        avg_rating = self.comments.aggregate(Avg('rating'))['rating__avg']
-        self.average_rating = avg_rating if avg_rating else 0
-        self.save()
-
 
 # Xử lý admin gán Store.active = true thì user mà nó có khóa ngoại sẽ tự động gán is_store_owner = true
 # khi admin cập nhật trường active trên adminsite
@@ -114,6 +109,25 @@ class Comment(models.Model):
     content = models.TextField(null=True, blank=True)
     created_date = models.DateTimeField(auto_now_add=True)
     updated_date = models.DateTimeField(auto_now=True)
+
+
+@receiver(signals.post_save, sender=Comment)
+def update_average_rating(sender, instance, **kwargs):
+    store = instance.stores
+
+    # Lấy tất cả các comment của store hiện tại mà user comment
+    comments = Comment.objects.filter(stores=store)
+
+    # Tính tổng và số lượng rating
+    total_rating = sum(comment.rating for comment in comments)
+    count = comments.count()
+
+    # Tính average rating
+    store.average_rating = total_rating / count if count > 0 else 0
+    store.save()
+
+
+signals.post_save.connect(update_average_rating, sender=Comment)
 
 
 class Address(models.Model):
