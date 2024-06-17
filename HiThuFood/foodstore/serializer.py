@@ -185,6 +185,19 @@ class OrderSerializer(serializers.ModelSerializer):
     def get_food_price(self, order):
         return order.total - order.shipping_fee
 
+    user_name = serializers.SerializerMethodField()
+
+    def get_user_name(self, order):
+        name = order.user.first_name + ' ' + order.user.last_name
+        if name == ' ':
+            return order.user.username
+        return name
+
+    address = serializers.SerializerMethodField()
+
+    def get_address(self, order):
+        return order.address.address_line
+
     class Meta:
         model = Order
-        fields = ['id', 'user', 'store', 'status', 'order_date', 'food_price' ,'shipping_fee', 'total', 'items']
+        fields = ['id', 'address', 'user', 'user_name', 'store', 'status', 'order_date', 'food_price' ,'shipping_fee', 'total', 'items']
