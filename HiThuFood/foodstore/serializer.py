@@ -102,7 +102,7 @@ class SellingTimeDetailSerializer(SellingTimeSerializer):
 class ReviewSerializer(ImageSerializer):
     class Meta:
         model = Review
-        fields = ['user', 'rating', 'comment', 'image', 'created_date']
+        fields = ['id', 'user', 'food', 'rating', 'comment', 'image', 'created_date']
 
 
 class CategorySerializer(serializers.ModelSerializer):
