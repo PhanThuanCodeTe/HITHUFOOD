@@ -214,7 +214,7 @@ class Review(models.Model):
     food = models.ForeignKey(Food, on_delete=models.CASCADE, related_name='reviews')
     rating = models.IntegerField(default=5)
     comment = models.TextField(blank=True)
-    image = CloudinaryField()
+    image = CloudinaryField(null=False)
     created_date = models.DateTimeField(auto_now_add=True)
 
     class Meta:

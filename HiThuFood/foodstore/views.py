@@ -68,7 +68,7 @@ class UserViewSet(viewsets.ViewSet):
 
     @action(methods=['get'], url_path='current-user/my-order', detail=False)
     def get_order(self, request):
-        return Response(OrderSerializer(request.user.orders_by_user, many=True), status=status.HTTP_200_OK)
+        return Response(OrderSerializer(request.user.orders_by_user, many=True).data, status=status.HTTP_200_OK)
 
 
 class StoreViewSet(viewsets.ModelViewSet):
@@ -496,3 +496,7 @@ class OrderViewSet(viewsets.ViewSet, generics.CreateAPIView, generics.RetrieveAP
         return Response(OrderSerializer(order).data, status=status.HTTP_200_OK)
 
 
+# class ReviewViewSet(viewsets.ModelViewSet):
+#     queryset = Review.objects.all()
+#     parser_classes = [parsers.MultiPartParser ]
+#     serializer_class =
