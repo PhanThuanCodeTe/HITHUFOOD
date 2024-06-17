@@ -500,7 +500,11 @@ class ReviewViewSet(viewsets.ModelViewSet):
     queryset = Review.objects.all()
     parser_classes = [parsers.MultiPartParser ]
     serializer_class = ReviewSerializer
-    permission_classes = [permissions.IsAuthenticated, IsObjectOwner]
+
+    def get_permissions(self):
+        if self.action in ['list']:
+            return [permissions.AllowAny()]
+        return [permissions.IsAuthenticated(), IsObjectOwner()]
 
     def create(self, request, *args, **kwargs):
         data = request.data
