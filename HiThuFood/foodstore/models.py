@@ -153,11 +153,6 @@ class Food(BaseItem):
     category = models.ManyToManyField('Category', null=True)
     users_review = models.ManyToManyField(User, through='Review', blank=True, null=True)
 
-    def update_average_rating(self):
-        avg_rating = self.reviews.aggregate(Avg('rating'))['rating__avg']
-        self.average_rating = avg_rating if avg_rating else 0
-        self.save()
-
     def __str__(self):
         return self.name
 
@@ -214,12 +209,30 @@ class Review(models.Model):
     food = models.ForeignKey(Food, on_delete=models.CASCADE, related_name='reviews')
     rating = models.IntegerField(default=5)
     comment = models.TextField(blank=True)
-    image = CloudinaryField(null=False)
+    image = CloudinaryField()
     created_date = models.DateTimeField(auto_now_add=True)
+    updated_date = models.DateTimeField(auto_now=True)
 
     class Meta:
         # 1 user chỉ đánh giá 1 lần
         unique_together = ('user', 'food')
+
+
+@receiver(signals.post_save, sender=Review)
+def update_average_rating(sender, instance, **kwargs):
+    food = instance.food
+
+    reviews = Review.objects.filter(food=food)
+
+    total_rating = sum(review.rating for review in reviews)
+    count = reviews.count()
+
+    # Tính average rating
+    food.average_rating = total_rating / count if count > 0 else 0
+    food.save()
+
+
+signals.post_save.connect(update_average_rating, sender=Review)
 
 
 class Topping(models.Model):

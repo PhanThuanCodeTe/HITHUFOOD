@@ -7,7 +7,9 @@ from .models import *
 class ImageSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         req = super().to_representation(instance)
-        req['image'] = instance.image.url
+        if instance.image is not None:
+            req['image'] = instance.image.url
+            return req
         return req
 
 
@@ -100,9 +102,19 @@ class SellingTimeDetailSerializer(SellingTimeSerializer):
 
 
 class ReviewSerializer(ImageSerializer):
+    user_name = serializers.SerializerMethodField()
+
+    def get_user_name(self, review):
+        return review.user.first_name + ' ' + review.user.last_name
+
+    food_name = serializers.SerializerMethodField()
+
+    def get_food_name(self, review):
+        return review.food.name
+
     class Meta:
         model = Review
-        fields = ['id', 'user', 'food', 'rating', 'comment', 'image', 'created_date']
+        fields = ['id', 'user', 'user_name', 'food', 'food_name', 'rating', 'comment', 'image', 'created_date', 'updated_date']
 
 
 class CategorySerializer(serializers.ModelSerializer):

@@ -11,6 +11,7 @@ router.register('food', views.FoodViewSet)
 router.register('times', views.SellingTimeViewSet)
 router.register('comment', views.CommentViewSet)
 router.register('order', views.OrderViewSet)
+router.register('review', views.ReviewViewSet)
 
 urlpatterns = [
     path('', include(router.urls)),
