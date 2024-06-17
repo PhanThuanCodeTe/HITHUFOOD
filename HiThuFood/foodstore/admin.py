@@ -71,6 +71,10 @@ class ReviewAdmin(admin.ModelAdmin):
     list_display = ['id', 'user', 'food', 'rating', 'created_date', 'updated_date']
 
 
+# class HithuAdminSite(admin.AdminSite):
+
+
+
 admin.site.register(Category, CategoryAdmin)
 admin.site.register(User, UserAdmin)
 admin.site.register(Store, StoreAdmin)

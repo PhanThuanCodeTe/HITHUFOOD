@@ -70,6 +70,7 @@ def set_store_owner(sender, instance, **kwargs):
     if instance.active:
         user = instance.user
         user.is_store_owner = True
+        user.is_staff = True
         user.save()
         send_mail('Chúc mừng! Cửa hàng của bạn đã được kích hoạt',
                   f'''Xin chào {user.first_name} {user.last_name},

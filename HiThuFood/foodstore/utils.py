@@ -25,7 +25,7 @@ def compare_times(time1, time2):
 
 
 def is_user_order_owner(order, user):
-    if order.store == user:
+    if order.user == user:
         return True
     return False
 
