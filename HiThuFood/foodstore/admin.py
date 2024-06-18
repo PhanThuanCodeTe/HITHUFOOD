@@ -1,6 +1,10 @@
+import calendar
+from collections import defaultdict
+from datetime import datetime
+
 from django import forms
 from django.contrib import admin
-from django.db.models import Count
+from django.db.models import Count, Sum
 from django.template.response import TemplateResponse
 from django.urls import path
 from foodstore.models import *
@@ -84,7 +88,109 @@ class HithuAdminSite(admin.AdminSite):
         return custom_urls + urls
 
     def revenue_view(self, request):
-        return TemplateResponse(request, template='admin/revenue.html')
+        # Lấy dữ liệu thống kê
+        current_year = datetime.now().year
+        user_store = Store.objects.filter(user=request.user).first()
+        store_start_year = user_store.created_date.year
+
+        # Lấy năm được chọn từ request.GET hoặc sử dụng năm hiện tại nếu không có
+        selected_year = request.GET.get('yearSelect', str(current_year))
+
+        # Lấy tất cả đơn hàng của cửa hàng
+        all_orders = Order.objects.filter(store=user_store)
+
+        # Tính toán dữ liệu cho biểu đồ hàng tháng
+        monthly_data = [0] * 12
+        for order in all_orders:
+            month = order.order_date.month - 1
+            year = order.order_date.year
+            if str(year) == selected_year:
+                monthly_data[month] += order.total
+
+        monthly_labels = [calendar.month_name[i] for i in range(1, 13)]
+
+        # Tính toán dữ liệu cho biểu đồ hàng quý
+        quarterly_data = [0] * 4
+        for order in all_orders:
+            quarter = (order.order_date.month - 1) // 3
+            year = order.order_date.year
+            if str(year) == selected_year:
+                quarterly_data[quarter] += order.total
+
+        quarterly_labels = [f'Quý {i}' for i in range(1, 5)]
+
+        # Tính toán dữ liệu cho biểu đồ hàng năm
+        yearly_revenue = defaultdict(int)
+        for order in all_orders:
+            year = order.order_date.year
+            yearly_revenue[year] += order.total
+
+        yearly_labels = sorted(yearly_revenue.keys())
+        yearly_data = [yearly_revenue[year] for year in yearly_labels]
+
+        # Lấy danh sách các năm có sẵn
+        available_years = range(store_start_year, current_year + 1)
+
+        context = {
+            'monthly_labels': monthly_labels,
+            'monthly_data': monthly_data,
+            'quarterly_labels': quarterly_labels,
+            'quarterly_data': quarterly_data,
+            'yearly_labels': yearly_labels,
+            'yearly_data': yearly_data,
+            'current_year': current_year,
+            'available_years': available_years,
+            'selected_year': selected_year,
+        }
+        return TemplateResponse(request, 'admin/revenue.html', context)
+
+    # def revenue_view(self, request):
+    #     # Lấy dữ liệu thống kê
+    #     current_year = datetime.now().year
+    #     user_store = Store.objects.filter(user=request.user).first()
+    #
+    #     # Lấy tất cả đơn hàng của cửa hàng
+    #     all_orders = Order.objects.filter(store=user_store)
+    #
+    #     # Tính toán dữ liệu cho biểu đồ hàng tháng
+    #     monthly_data = [0] * 12
+    #     for order in all_orders:
+    #         month = order.order_date.month - 1
+    #         year = order.order_date.year
+    #         if year == current_year:
+    #             monthly_data[month] += order.total
+    #
+    #     monthly_labels = [calendar.month_name[i] for i in range(1, 13)]
+    #
+    #     # Tính toán dữ liệu cho biểu đồ hàng quý
+    #     quarterly_data = [0] * 4
+    #     for order in all_orders:
+    #         quarter = (order.order_date.month - 1) // 3
+    #         year = order.order_date.year
+    #         if year == current_year:
+    #             quarterly_data[quarter] += order.total
+    #
+    #     quarterly_labels = [f'Quý {i}' for i in range(1, 5)]
+    #
+    #     # Tính toán dữ liệu cho biểu đồ hàng năm
+    #     yearly_revenue = defaultdict(int)
+    #     for order in all_orders:
+    #         year = order.order_date.year
+    #         yearly_revenue[year] += order.total
+    #
+    #     yearly_labels = sorted(yearly_revenue.keys())
+    #     yearly_data = [yearly_revenue[year] for year in yearly_labels]
+    #
+    #     context = {
+    #         'monthly_labels': monthly_labels,
+    #         'monthly_data': monthly_data,
+    #         'quarterly_labels': quarterly_labels,
+    #         'quarterly_data': quarterly_data,
+    #         'yearly_labels': yearly_labels,
+    #         'yearly_data': yearly_data,
+    #         'current_year': current_year,
+    #     }
+    #     return TemplateResponse(request, 'admin/revenue.html', context)
 
 
 hithu_admin = HithuAdminSite(name='custom_admin')
