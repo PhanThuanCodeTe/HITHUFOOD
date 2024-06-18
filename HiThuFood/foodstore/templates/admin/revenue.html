@@ -25,15 +25,6 @@
         <li><a data-toggle="pill" href="#menu2">Doanh thu mỗi năm</a></li>
     </ul>
 
-    <div class="form-group">
-        <label for="yearSelect">Chọn năm:</label>
-        <select class="form-control" id="yearSelect" name="yearSelect">
-            {% for year in available_years %}
-            <option value="{{ year }}" {% if year == selected_year %}selected{% endif %}>{{ year }}</option>
-            {% endfor %}
-        </select>
-    </div>
-
     <div class="container">
         <canvas id="myChart"></canvas>
     </div>
