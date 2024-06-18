@@ -9,7 +9,7 @@
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
     <!-- thu vien Chart.js-->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.6.0/Chart.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         .nav-pills > li > a {
             font-size: 18px;
@@ -20,51 +20,154 @@
 
 <body>
     <ul class="nav nav-pills">
-        <li class="active"><a data-toggle="pill" href="#home">Home</a></li>
-        <li><a data-toggle="pill" href="#menu1">Menu 1</a></li>
-        <li><a data-toggle="pill" href="#menu2">Menu 2</a></li>
+        <li class="active"><a data-toggle="pill" href="#home">Doanh thu mỗi tháng</a></li>
+        <li><a data-toggle="pill" href="#menu1">Doanh thu mỗi quý</a></li>
+        <li><a data-toggle="pill" href="#menu2">Doanh thu mỗi năm</a></li>
     </ul>
 
-
-
-    <div class="tab-content">
-        <div id="home" class="tab-pane fade in active">
-            <h3>HOME</h3>
-            <p>Some content.</p>
-        </div>
-        <div id="menu1" class="tab-pane fade">
-            <h3>Menu 1</h3>
-            <p>Some content in menu 1.</p>
-        </div>
-        <div id="menu2" class="tab-pane fade">
-            <h3>Menu 2</h3>
-            <p>Some content in menu 2.</p>
-        </div>
+    <div class="form-group">
+        <label for="yearSelect">Chọn năm:</label>
+        <select class="form-control" id="yearSelect" name="yearSelect">
+            {% for year in available_years %}
+            <option value="{{ year }}" {% if year == selected_year %}selected{% endif %}>{{ year }}</option>
+            {% endfor %}
+        </select>
     </div>
 
     <div class="container">
-            <canvas id="myChart"></canvas>
+        <canvas id="myChart"></canvas>
     </div>
 
-<script>
-    const config = {
-  type: 'line',
-  data: data,
-};
-    const labels = Utils.months({count: 7});
-const data = {
-  labels: labels,
-  datasets: [{
-    label: 'My First Dataset',
-    data: [65, 59, 80, 81, 56, 55, 40],
-    fill: false,
-    borderColor: 'rgb(75, 192, 192)',
-    tension: 0.1
-  }]
-};
-</script>
+    <div class="tab-content">
+        <div id="home" class="tab-pane fade in active">
+            <h1>Thống kê doanh thu năm {{ current_year }}</h1>
+            <div class="row">
+                <div class="col-md-6">
+                    <h3>Doanh thu hàng tháng ({{ current_year }})</h3>
+                    <canvas id="monthlyRevenueChart" width="600" height="400"></canvas>
+                </div>
+            </div>
+            <script>
+                // Data for Monthly Revenue Chart
+                var monthlyCtx = document.getElementById('monthlyRevenueChart').getContext('2d');
+    var monthlyLabels = {{ monthly_labels|safe }};
+    var monthlyData = {{ monthly_data|safe }};
 
+    var monthlyChart = new Chart(monthlyCtx, {
+        type: 'line',
+        data: {
+            labels: monthlyLabels,
+            datasets: [{
+                label: 'Doanh thu hàng tháng',
+                data: monthlyData,
+                borderColor: 'rgba(75, 192, 192, 1)',
+                borderWidth: 2,
+                fill: false
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value, index, values) {
+                            return value.toLocaleString('vi-VN', {style: 'currency', currency: 'VND'});
+                        }
+                    }
+                }
+            }
+        }
+    });
+            </script>
+        </div>
 
+        <div id="menu1" class="tab-pane fade">
+            <h1>Thống kê doanh thu năm {{ current_year }}</h1>
+            <div class="row">
+                <div class="col-md-6">
+                    <h3>Doanh thu hàng quý ({{ current_year }})</h3>
+                    <canvas id="quarterlyRevenueChart" width="600" height="400"></canvas>
+                </div>
+            </div>
+            <script>
+                // Data for Quarterly Revenue Chart
+    var quarterlyCtx = document.getElementById('quarterlyRevenueChart').getContext('2d');
+    var quarterlyLabels = {{ quarterly_labels|safe }};
+    var quarterlyData = {{ quarterly_data|safe }};
+
+    var quarterlyChart = new Chart(quarterlyCtx, {
+        type: 'line',
+        data: {
+            labels: quarterlyLabels,
+            datasets: [{
+                label: 'Doanh thu hàng quý',
+                data: quarterlyData,
+                borderColor: 'rgba(153, 102, 255, 1)',
+                borderWidth: 2,
+                fill: false
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value, index, values) {
+                            return value.toLocaleString('vi-VN', {style: 'currency', currency: 'VND'});
+                        }
+                    }
+                }
+            }
+        }
+    });
+            </script>
+        </div>
+
+        <div id="menu2" class="tab-pane fade">
+            <h1>Doanh thu hàng năm từ khi Store được tạo</h1>
+            <div class="row">
+                <div class="col-md-4">
+                    <h3>Doanh thu hàng năm</h3>
+                    <canvas id="yearlyRevenueChart" width="1000" height="800"></canvas>
+                </div>
+            </div>
+            <script>
+                // Data for Yearly Revenue Chart
+    var yearlyCtx = document.getElementById('yearlyRevenueChart').getContext('2d');
+    var yearlyLabels = {{ yearly_labels|safe }};
+    var yearlyData = {{ yearly_data|safe }};
+
+    var yearlyChart = new Chart(yearlyCtx, {
+        type: 'line',
+        data: {
+            labels: yearlyLabels,
+            datasets: [{
+                label: 'Doanh thu hàng năm',
+                data: yearlyData,
+                borderColor: 'rgba(255, 99, 132, 1)',
+                borderWidth: 2,
+                fill: false
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value, index, values) {
+                            return value.toLocaleString('vi-VN', {style: 'currency', currency: 'VND'});
+                        }
+                    }
+                }
+            }
+        }
+    });
+            </script>
+        </div>
+    </div>
 </body>
 
 {% endblock %}

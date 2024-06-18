@@ -158,6 +158,39 @@ class Food(BaseItem):
         return self.name
 
 
+# thong bao cho cac user dang follow khi co food moi
+@receiver(signals.post_save, sender=Food)
+def notification(sender, instance, **kwargs):
+    user_follow_store = UserFollowedStore.objects.filter(store=instance.store)
+    for i in range(user_follow_store.count()):
+
+        send_mail(f'Bạn ơi, cửa hàng {user_follow_store[i].store.name} có món mới!',
+                  f'''Xin chào {user_follow_store[i].user.first_name} {user_follow_store[i].user.last_name},
+
+Cửa hàng {user_follow_store[i].store.name} mà bạn theo dõi đã có món mới! Hãy nhanh tay khám phá và thưởng thức những món ăn ngon mới nhất từ {user_follow_store[i].store.name}.
+
+------------------------------------------------------------
+
+Thông tin món:
+Tên món: {instance.name}
+
+Mô tả: {instance.description}
+
+Giá món: {instance.price}
+
+Ngoài ra, {user_follow_store[i].store.name} còn có nhiều món ngon khác đang chờ bạn khám phá.
+
+Thân mến,
+HiThuFood''',
+                  from_email=settings.EMAIL_HOST_USER,
+                  recipient_list=[user_follow_store[i].user.email],
+                  fail_silently=False)
+
+
+# Connect the signal
+signals.post_save.connect(notification, sender=Food)
+
+
 class SellingTime(models.Model):
     name = models.CharField(max_length=50, )
     start = models.TimeField()
