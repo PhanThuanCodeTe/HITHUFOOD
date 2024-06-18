@@ -71,18 +71,33 @@ class ReviewAdmin(admin.ModelAdmin):
     list_display = ['id', 'user', 'food', 'rating', 'created_date', 'updated_date']
 
 
-# class HithuAdminSite(admin.AdminSite):
+class HithuAdminSite(admin.AdminSite):
+    site_header = "Quản lý HiThuFood"
+    site_title = "HiThuFood Admin"
+    index_title = "Chào mừng đến với HiThuFood Admin"
+
+    def get_urls(self):
+        urls = super().get_urls()
+        custom_urls = [
+            path('revenue/', self.revenue_view),
+        ]
+        return custom_urls + urls
+
+    def revenue_view(self, request):
+        return TemplateResponse(request, template='admin/revenue.html')
 
 
+hithu_admin = HithuAdminSite(name='custom_admin')
 
-admin.site.register(Category, CategoryAdmin)
-admin.site.register(User, UserAdmin)
-admin.site.register(Store, StoreAdmin)
-admin.site.register(Food, FoodAdmin)
-admin.site.register(Address, AddressAdmin)
-admin.site.register(SellingTime, SellingTimeAdmin)
-admin.site.register(UserFollowedStore, FollowAdmin)
-admin.site.register(Topping, ToppingAdmin)
-admin.site.register(Comment, CommentAdmin)
-admin.site.register(Order, OrderAdmin)
-admin.site.register(Review, ReviewAdmin)
+
+hithu_admin.register(Category, CategoryAdmin)
+hithu_admin.register(User, UserAdmin)
+hithu_admin.register(Store, StoreAdmin)
+hithu_admin.register(Food, FoodAdmin)
+hithu_admin.register(Address, AddressAdmin)
+hithu_admin.register(SellingTime, SellingTimeAdmin)
+hithu_admin.register(UserFollowedStore, FollowAdmin)
+hithu_admin.register(Topping, ToppingAdmin)
+hithu_admin.register(Comment, CommentAdmin)
+hithu_admin.register(Order, OrderAdmin)
+hithu_admin.register(Review, ReviewAdmin)

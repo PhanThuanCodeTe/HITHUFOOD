@@ -245,7 +245,7 @@ class FoodViewSet(viewsets.ViewSet, generics.DestroyAPIView, generics.ListAPIVie
     parser_classes = [parsers.MultiPartParser, ]
 
     def get_permissions(self):
-        if self.action in ['list', 'retrieve'] or (self.action == 'add_get_topping' and self.request.method == 'GET'):
+        if self.action in ['list', 'retrieve', 'get_review'] or (self.action == 'add_get_topping' and self.request.method == 'GET'):
             return [permissions.AllowAny()]
         return [permissions.IsAuthenticated()]
 
@@ -334,6 +334,11 @@ class FoodViewSet(viewsets.ViewSet, generics.DestroyAPIView, generics.ListAPIVie
 
         topping.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+    @action(methods=['get'], url_path='reviews-of-food', detail=True)
+    def get_review(self, request, pk):
+        food = self.get_object()
+        return Response(ReviewSerializer(food.reviews, many=True).data, status=status.HTTP_200_OK)
 
 
 class SellingTimeViewSet(viewsets.ViewSet, generics.ListAPIView):
