@@ -1,0 +1,70 @@
+{% extends 'admin/base_site.html' %}
+{% block content %}
+<head>
+    <title>Thống kê doanh thu HiThuFood</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=2">
+    <!--  Boostrap 3 cdn  -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
+    <!-- thu vien Chart.js-->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.6.0/Chart.min.js"></script>
+    <style>
+        .nav-pills > li > a {
+            font-size: 18px;
+            padding: 15px 20px;
+        }
+    </style>
+</head>
+
+<body>
+    <ul class="nav nav-pills">
+        <li class="active"><a data-toggle="pill" href="#home">Home</a></li>
+        <li><a data-toggle="pill" href="#menu1">Menu 1</a></li>
+        <li><a data-toggle="pill" href="#menu2">Menu 2</a></li>
+    </ul>
+
+
+
+    <div class="tab-content">
+        <div id="home" class="tab-pane fade in active">
+            <h3>HOME</h3>
+            <p>Some content.</p>
+        </div>
+        <div id="menu1" class="tab-pane fade">
+            <h3>Menu 1</h3>
+            <p>Some content in menu 1.</p>
+        </div>
+        <div id="menu2" class="tab-pane fade">
+            <h3>Menu 2</h3>
+            <p>Some content in menu 2.</p>
+        </div>
+    </div>
+
+    <div class="container">
+            <canvas id="myChart"></canvas>
+    </div>
+
+<script>
+    const config = {
+  type: 'line',
+  data: data,
+};
+    const labels = Utils.months({count: 7});
+const data = {
+  labels: labels,
+  datasets: [{
+    label: 'My First Dataset',
+    data: [65, 59, 80, 81, 56, 55, 40],
+    fill: false,
+    borderColor: 'rgb(75, 192, 192)',
+    tension: 0.1
+  }]
+};
+</script>
+
+
+</body>
+
+{% endblock %}
