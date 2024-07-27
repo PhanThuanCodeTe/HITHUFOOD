@@ -1,0 +1,86 @@
+
+muốn đăng nhập bằng googlemail facebook thì phải làm saoo
+volume_up
+
+Cách đăng nhập Facebook bằng Gmail:
+Có hai cách chính để đăng nhập Facebook bằng Gmail:
+
+1. Sử dụng Gmail làm tài khoản đăng ký Facebook:
+
+Bước 1: Truy cập trang web Facebook (https://vi-vn.facebook.com/) hoặc mở ứng dụng Facebook trên điện thoại.
+Bước 2: Nhấp vào nút "Đăng ký" (hoặc "Tạo tài khoản mới").
+Bước 3: Chọn "Đăng ký bằng email" và nhập địa chỉ Gmail mà bạn muốn sử dụng.
+Bước 4: Điền đầy đủ thông tin cá nhân khác như tên, ngày sinh, mật khẩu, v.v.
+Bước 5: Xác nhận email của bạn bằng cách nhấp vào liên kết được gửi đến hộp thư đến Gmail của bạn.
+2. Liên kết Gmail với tài khoản Facebook hiện có:
+
+Bước 1: Đăng nhập vào tài khoản Facebook hiện có của bạn.
+Bước 2: Nhấp vào mũi tên hướng xuống ở góc phải màn hình và chọn "Cài đặt".
+Bước 3: Chọn "Chỉnh sửa thông tin liên hệ".
+Bước 4: Nhấp vào "Thêm email" và nhập địa chỉ Gmail mà bạn muốn liên kết.
+Bước 5: Xác nhận email của bạn bằng cách nhấp vào liên kết được gửi đến hộp thư đến Gmail của bạn.
+Sau khi đã liên kết Gmail với tài khoản Facebook, bạn có thể sử dụng Gmail để đăng nhập vào Facebook thay vì sử dụng tên người dùng và mật khẩu Facebook.
+
+Lưu ý:
+
+Để đăng nhập Facebook bằng Gmail, bạn cần đảm bảo rằng bạn đã bật tính năng "Đăng nhập bằng Google" trên tài khoản Facebook của mình.
+Bạn cũng có thể sử dụng Gmail để đặt lại mật khẩu Facebook của mình nếu bạn quên.
+Ngoài ra, bạn có thể tham khảo thêm các hướng dẫn sau:
+
+Hướng dẫn cách đăng nhập facebook bằng gmail: https://vi-vn.facebook.com/help/162801153783275
+Cách đăng nhập Facebook bằng Gmail không cần mật khẩu: https://www.dienmayxanh.com/kinh-nghiem-hay/cach-dang-nhap-vao-facebook-ma-khong-can-mat-khau-1308471
+Hướng dẫn bạn cách đăng nhập Facebook bằng Gmail cực đơn giản: https://fptshop.com.vn/tin-tuc/thu-thuat/huong-dan-ban-cach-dang-nhap-facebook-bang-gmail-cuc-don-gian-145598
+Chúc bạn thành công!
+
+
+
+
+share
+
+
+more_vert
+
+tôi đang xây dựng ứng dụng react native, tôi muốn các user của tôi có thể đăng nhập bằng gooogle mail hoặc facebook, tôi cần làm những gì?
+edit
+Hiện bản thảo
+volume_up
+
+Để tích hợp đăng nhập bằng Google và Facebook vào ứng dụng React Native của bạn, bạn cần thực hiện các bước sau:
+1. Cài đặt thư viện:
+
+Cài đặt thư viện react-native-firebase để sử dụng Firebase Authentication.
+Cài đặt thư viện expo-google-app-auth hoặc react-native-google-signin để đăng nhập bằng Google.
+Cài đặt thư viện react-native-facebook để đăng nhập bằng Facebook.
+2. Cấu hình Firebase:
+
+Tạo một dự án Firebase mới hoặc sử dụng dự án hiện có.
+Bật tính năng Firebase Authentication.
+Thêm ứng dụng Android và iOS của bạn vào Firebase console.
+Tải xuống tệp google-services.json cho ứng dụng Android và tệp GoogleService-Info.plist cho ứng dụng iOS.
+3. Cấu hình Google Sign-In:
+
+Tạo một dự án Google Developer Console mới hoặc sử dụng dự án hiện có.
+Bật Google Sign-In API cho dự án của bạn.
+Tạo một ứng dụng OAuth mới và lưu ID ứng dụng và bí mật ứng dụng.
+Thêm ID ứng dụng vào tệp google-services.json cho ứng dụng Android và tệp GoogleService-Info.plist cho ứng dụng iOS.
+4. Cấu hình Facebook Login:
+
+Tạo một ứng dụng Facebook Developer mới hoặc sử dụng ứng dụng hiện có.
+Bật tính năng Facebook Login cho ứng dụng của bạn.
+Lưu ID ứng dụng Facebook và bí mật ứng dụng.
+Thêm ID ứng dụng Facebook vào tệp Info.plist cho ứng dụng iOS.
+5. Triển khai đăng nhập:
+
+Sử dụng các thành phần của thư viện react-native-firebase, expo-google-app-auth hoặc react-native-google-signin và react-native-facebook để tạo nút đăng nhập cho Google và Facebook.
+Xử lý sự kiện đăng nhập để lấy thông tin người dùng và lưu trữ vào ứng dụng của bạn.
+Sử dụng Firebase Authentication để quản lý trạng thái đăng nhập của người dùng.
+Dưới đây là một số tài nguyên hữu ích để bạn tham khảo:
+
+Hướng dẫn đăng nhập bằng Google với React Native: https://www.freecodecamp.org/news/google-login-with-react-native-and-firebase/
+Hướng dẫn đăng nhập bằng Facebook với React Native: https://mehrankhandev.medium.com/integrating-fbsdk-facebook-login-in-react-native-7b7600ce74a7
+Ví dụ về ứng dụng React Native với đăng nhập Google và Facebook: [đã xoá URL không hợp lệ]
+Lưu ý:
+
+Bạn cần đảm bảo rằng bạn đã tuân thủ các nguyên tắc và chính sách của Google và Facebook khi sử dụng các API của họ trong ứng dụng của mình.
+Bạn nên cung cấp cho người dùng tùy chọn đăng nhập bằng email và mật khẩu ngoài đăng nhập bằng Google và Facebook.
+Chúc bạn thành công!
